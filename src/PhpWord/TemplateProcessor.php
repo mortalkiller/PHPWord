@@ -863,7 +863,7 @@ class TemplateProcessor
         $escapedMacroOpeningChars = self::$macroOpeningChars;
         $escapedMacroClosingChars = self::$macroClosingChars;
         preg_match(
-            //'/(.*((?s)<w:p\b(?:(?!<w:p\b).)*?\{{' . $blockname . '}<\/w:.*?p>))(.*)((?s)<w:p\b(?:(?!<w:p\b).)[^$]*?\{{\/' . $blockname . '}<\/w:.*?p>)/is',
+        //'/(.*((?s)<w:p\b(?:(?!<w:p\b).)*?\{{' . $blockname . '}<\/w:.*?p>))(.*)((?s)<w:p\b(?:(?!<w:p\b).)[^$]*?\{{\/' . $blockname . '}<\/w:.*?p>)/is',
             '/(.*((?s)<w:p\b(?:(?!<w:p\b).)*?\\' . $escapedMacroOpeningChars . $blockname . $escapedMacroClosingChars . '<\/w:.*?p>))(.*)((?s)<w:p\b(?:(?!<w:p\b).)[^$]*?\\' . $escapedMacroOpeningChars . '\/' . $blockname . $escapedMacroClosingChars . '<\/w:.*?p>)/is',
             //'/(.*((?s)<w:p\b(?:(?!<w:p\b).)*?\\'. $escapedMacroOpeningChars . $blockname . '}<\/w:.*?p>))(.*)((?s)<w:p\b(?:(?!<w:p\b).)[^$]*?\\'.$escapedMacroOpeningChars.'\/' . $blockname . '}<\/w:.*?p>)/is',
             $this->tempDocumentMainPart,
@@ -891,6 +891,47 @@ class TemplateProcessor
                 );
             }
         }
+        $this->cloneBlockFooter($blockname, $clones, $replace, $indexVariables, $variableReplacements);
+        return $xmlBlock;
+    }
+    private function cloneBlockFooter($blockname, $clones = 1, $replace = true, $indexVariables = false, $variableReplacements = null)
+    {
+        foreach ($this->tempDocumentFooters as &$documentFooter) {
+            $xmlBlock = null;
+            $matches = [];
+            $escapedMacroOpeningChars = self::$macroOpeningChars;
+            $escapedMacroClosingChars = self::$macroClosingChars;
+            preg_match(
+            //'/(.*((?s)<w:p\b(?:(?!<w:p\b).)*?\{{' . $blockname . '}<\/w:.*?p>))(.*)((?s)<w:p\b(?:(?!<w:p\b).)[^$]*?\{{\/' . $blockname . '}<\/w:.*?p>)/is',
+                '/(.*((?s)<w:p\b(?:(?!<w:p\b).)*?\\' . $escapedMacroOpeningChars . $blockname . $escapedMacroClosingChars . '<\/w:.*?p>))(.*)((?s)<w:p\b(?:(?!<w:p\b).)[^$]*?\\' . $escapedMacroOpeningChars . '\/' . $blockname . $escapedMacroClosingChars . '<\/w:.*?p>)/is',
+                //'/(.*((?s)<w:p\b(?:(?!<w:p\b).)*?\\'. $escapedMacroOpeningChars . $blockname . '}<\/w:.*?p>))(.*)((?s)<w:p\b(?:(?!<w:p\b).)[^$]*?\\'.$escapedMacroOpeningChars.'\/' . $blockname . '}<\/w:.*?p>)/is',
+                $documentFooter,
+                $matches
+            );
+
+            if (isset($matches[3])) {
+                $xmlBlock = $matches[3];
+                if ($indexVariables) {
+                    $cloned = $this->indexClonedVariables($clones, $xmlBlock);
+                } elseif ($variableReplacements !== null && is_array($variableReplacements)) {
+                    $cloned = $this->replaceClonedVariables($variableReplacements, $xmlBlock);
+                } else {
+                    $cloned = [];
+                    for ($i = 1; $i <= $clones; ++$i) {
+                        $cloned[] = $xmlBlock;
+                    }
+                }
+
+                if ($replace) {
+                    $documentFooter = str_replace(
+                        $matches[2] . $matches[3] . $matches[4],
+                        implode('', $cloned),
+                        $documentFooter
+                    );
+                }
+            }
+        }
+
 
         return $xmlBlock;
     }
