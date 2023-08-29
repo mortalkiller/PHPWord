@@ -896,8 +896,8 @@ class TemplateProcessor
     }
     private function cloneBlockFooter($blockname, $clones = 1, $replace = true, $indexVariables = false, $variableReplacements = null)
     {
+        $xmlBlock = null;
         foreach ($this->tempDocumentFooters as &$documentFooter) {
-            $xmlBlock = null;
             $matches = [];
             $escapedMacroOpeningChars = self::$macroOpeningChars;
             $escapedMacroClosingChars = self::$macroClosingChars;
