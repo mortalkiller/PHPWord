@@ -1,5 +1,4 @@
 <?php
-
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -159,44 +158,9 @@ class Chart extends AbstractPart
         $xmlWriter->writeElement('c:layout');
 
         // Chart
-        $chartType = $this->options['type'];
-        $chartType .= $style->is3d() && !isset($this->options['no3d']) ? '3D' : '';
-        $chartType .= 'Chart';
-        $xmlWriter->startElement("c:{$chartType}");
-
-        $xmlWriter->writeElementBlock('c:varyColors', 'val', $this->options['colors']);
-        if ($type == 'area') {
-            $xmlWriter->writeElementBlock('c:grouping', 'val', 'standard');
-        }
-        if (isset($this->options['hole'])) {
-            $xmlWriter->writeElementBlock('c:holeSize', 'val', $this->options['hole']);
-        }
-        if (isset($this->options['bar'])) {
-            $xmlWriter->writeElementBlock('c:barDir', 'val', $this->options['bar']); // bar|col
-            $xmlWriter->writeElementBlock('c:grouping', 'val', $this->options['grouping']); // 3d; standard = percentStacked
-        }
-        if (isset($this->options['radar'])) {
-            $xmlWriter->writeElementBlock('c:radarStyle', 'val', $this->options['radar']);
-        }
-        if (isset($this->options['scatter'])) {
-            $xmlWriter->writeElementBlock('c:scatterStyle', 'val', $this->options['scatter']);
-        }
 
         // Series
         $this->writeSeries($xmlWriter, isset($this->options['scatter']));
-
-        // don't overlap if grouping is 'clustered'
-        if (!isset($this->options['grouping']) || $this->options['grouping'] != 'clustered') {
-            $xmlWriter->writeElementBlock('c:overlap', 'val', '100');
-        }
-
-        // Axes
-        if (isset($this->options['axes'])) {
-            $xmlWriter->writeElementBlock('c:axId', 'val', 1);
-            $xmlWriter->writeElementBlock('c:axId', 'val', 2);
-        }
-
-        $xmlWriter->endElement(); // chart type
 
         // Axes
         if (isset($this->options['axes'])) {
@@ -220,73 +184,71 @@ class Chart extends AbstractPart
 
         $index = 0;
         $colorIndex = 0;
-        foreach ($series as $seriesItem) {
-            $categories = $seriesItem['categories'];
-            $values = $seriesItem['values'];
 
-            $xmlWriter->startElement('c:ser');
+        foreach ($series as $type => $items) {
+            // Chart
+            $this->startChart($xmlWriter, $type);
+            foreach ($items as $seriesItem) {
+                $categories = $seriesItem['categories'];
+                $values = $seriesItem['values'];
 
-            $xmlWriter->writeElementBlock('c:idx', 'val', $index);
-            $xmlWriter->writeElementBlock('c:order', 'val', $index);
+                $xmlWriter->startElement('c:ser');
 
-            if (null !== $seriesItem['name'] && $seriesItem['name'] != '') {
-                $xmlWriter->startElement('c:tx');
-                $xmlWriter->startElement('c:strRef');
-                $xmlWriter->startElement('c:strCache');
-                $xmlWriter->writeElementBlock('c:ptCount', 'val', 1);
-                $xmlWriter->startElement('c:pt');
-                $xmlWriter->writeAttribute('idx', 0);
-                $xmlWriter->startElement('c:v');
-                $xmlWriter->writeRaw($seriesItem['name']);
-                $xmlWriter->endElement(); // c:v
-                $xmlWriter->endElement(); // c:pt
-                $xmlWriter->endElement(); // c:strCache
-                $xmlWriter->endElement(); // c:strRef
-                $xmlWriter->endElement(); // c:tx
-            }
+                $xmlWriter->writeElementBlock('c:idx', 'val', $index);
+                $xmlWriter->writeElementBlock('c:order', 'val', $index);
 
-            // The c:dLbls was added to make word charts look more like the reports in SurveyGizmo
-            // This section needs to be made configurable before a pull request is made
-            $xmlWriter->startElement('c:dLbls');
+                if (!is_null($seriesItem['name']) && $seriesItem['name'] != '') {
+                    $xmlWriter->startElement('c:tx');
+                    $xmlWriter->startElement('c:strRef');
+                    $xmlWriter->startElement('c:strCache');
+                    $xmlWriter->writeElementBlock('c:ptCount', 'val', 1);
+                    $xmlWriter->startElement('c:pt');
+                    $xmlWriter->writeAttribute('idx', 0);
+                    $xmlWriter->startElement('c:v');
+                    $xmlWriter->writeRaw($seriesItem['name']);
+                    $xmlWriter->endElement(); // c:v
+                    $xmlWriter->endElement(); // c:pt
+                    $xmlWriter->endElement(); // c:strCache
+                    $xmlWriter->endElement(); // c:strRef
+                    $xmlWriter->endElement(); // c:tx
+                }
 
-            foreach ($style->getDataLabelOptions() as $option => $val) {
-                $xmlWriter->writeElementBlock("c:{$option}", 'val', (int) $val);
-            }
+                // The c:dLbls was added to make word charts look more like the reports in SurveyGizmo
+                // This section needs to be made configurable before a pull request is made
+                $xmlWriter->startElement('c:dLbls');
 
-            $xmlWriter->endElement(); // c:dLbls
+                foreach ($style->getDataLabelOptions() as $option => $val) {
+                    $xmlWriter->writeElementBlock("c:{$option}", 'val', (int) $val);
+                }
 
-            if (isset($this->options['scatter'])) {
-                $this->writeShape($xmlWriter);
-            }
+                $xmlWriter->endElement(); // c:dLbls
 
-            if ($scatter === true) {
-                $this->writeSeriesItem($xmlWriter, 'xVal', $categories);
-                $this->writeSeriesItem($xmlWriter, 'yVal', $values);
-            } else {
-                $this->writeSeriesItem($xmlWriter, 'cat', $categories);
-                $this->writeSeriesItem($xmlWriter, 'val', $values);
+                if (isset($this->options['scatter'])) {
+                    $this->writeShape($xmlWriter);
+                }
 
-                // check that there are colors
-                if (is_array($colors) && count($colors) > 0) {
-                    // assign a color to each value
-                    $valueIndex = 0;
-                    for ($i = 0; $i < count($values); ++$i) {
-                        // check that there are still enought colors
-                        $xmlWriter->startElement('c:dPt');
-                        $xmlWriter->writeElementBlock('c:idx', 'val', $valueIndex);
+                if ($scatter === true) {
+                    $this->writeSeriesItem($xmlWriter, 'xVal', $categories);
+                    $this->writeSeriesItem($xmlWriter, 'yVal', $values);
+                } else {
+                    $this->writeSeriesItem($xmlWriter, 'cat', $categories);
+                    $this->writeSeriesItem($xmlWriter, 'val', $values);
+
+                    // check that there are colors
+                    if (is_array($colors) && count($colors) > 0) {
+                        // assign a color to each value
                         $xmlWriter->startElement('c:spPr');
                         $xmlWriter->startElement('a:solidFill');
                         $xmlWriter->writeElementBlock('a:srgbClr', 'val', $colors[$colorIndex++ % count($colors)]);
                         $xmlWriter->endElement(); // a:solidFill
                         $xmlWriter->endElement(); // c:spPr
-                        $xmlWriter->endElement(); // c:dPt
-                        ++$valueIndex;
                     }
                 }
-            }
 
-            $xmlWriter->endElement(); // c:ser
-            ++$index;
+                $xmlWriter->endElement(); // c:ser
+                ++$index;
+            }
+            $this->endChart($xmlWriter);
         }
     }
 
@@ -438,5 +400,52 @@ class Chart extends AbstractPart
         $xmlWriter->endElement(); // end c:tx
         $xmlWriter->writeElementBlock('c:overlay', 'val', '0');
         $xmlWriter->endElement(); // end c:title
+    }
+
+    private function startChart(XMLWriter $xmlWriter, $type)
+    {
+        $options = $this->types[$type];
+        $chartType = $options['type'];
+        $chartType .= $this->element->getStyle()->is3d() && !isset($this->options['no3d']) ? '3D' : '';
+        $chartType .= 'Chart';
+        $xmlWriter->startElement("c:{$chartType}");
+
+        $xmlWriter->writeElementBlock('c:varyColors', 'val', $options['colors']);
+        if ($type == 'area') {
+            $xmlWriter->writeElementBlock('c:grouping', 'val', 'standard');
+        }
+        if (isset($options['hole'])) {
+            $xmlWriter->writeElementBlock('c:holeSize', 'val', $options['hole']);
+        }
+        if (isset($options['bar'])) {
+            $xmlWriter->writeElementBlock('c:barDir', 'val', $options['bar']); // bar|col
+            $xmlWriter->writeElementBlock(
+                'c:grouping',
+                'val',
+                $options['grouping']
+            ); // 3d; standard = percentStacked
+        }
+        if (isset($options['radar'])) {
+            $xmlWriter->writeElementBlock('c:radarStyle', 'val', $options['radar']);
+        }
+        if (isset($options['scatter'])) {
+            $xmlWriter->writeElementBlock('c:scatterStyle', 'val', $options['scatter']);
+        }
+    }
+
+    private function endChart(XMLWriter $xmlWriter)
+    {
+        // don't overlap if grouping is 'clustered'
+        if (!isset($this->options['grouping']) || $this->options['grouping'] != 'clustered') {
+            $xmlWriter->writeElementBlock('c:overlap', 'val', '100');
+        }
+
+        // Axes
+        if (isset($this->options['axes'])) {
+            $xmlWriter->writeElementBlock('c:axId', 'val', 1);
+            $xmlWriter->writeElementBlock('c:axId', 'val', 2);
+        }
+
+        $xmlWriter->endElement(); // chart type
     }
 }

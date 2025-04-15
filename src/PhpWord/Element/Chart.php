@@ -1,5 +1,4 @@
 <?php
-
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -99,9 +98,12 @@ class Chart extends AbstractElement
      * @param array $values
      * @param null|mixed $name
      */
-    public function addSeries($categories, $values, $name = null): void
+    public function addSeries($categories, $values, $name = null, $type = null): void
     {
-        $this->series[] = [
+        if ($type === null) {
+            $type = $this->type;
+        }
+        $this->series[$type][] = [
             'categories' => $categories,
             'values' => $values,
             'name' => $name,
