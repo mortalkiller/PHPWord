@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -224,5 +225,20 @@ class SettingsTest extends \PHPUnit\Framework\TestCase
     {
         $oSettings = new Settings();
         self::assertNull($oSettings->hasDoNotHyphenateCaps());
+    }
+
+    public function testBookFoldPrinting(): void
+    {
+        $oSettings = new Settings();
+        self::assertInstanceOf(Settings::class, $oSettings->setBookFoldPrinting(true));
+        self::assertTrue($oSettings->hasBookFoldPrinting());
+        self::assertInstanceOf(Settings::class, $oSettings->setBookFoldPrinting(false));
+        self::assertFalse($oSettings->hasBookFoldPrinting());
+    }
+
+    public function testDefaultBookFoldPrinting(): void
+    {
+        $oSettings = new Settings();
+        self::assertFalse($oSettings->hasBookFoldPrinting());
     }
 }

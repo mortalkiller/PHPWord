@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -39,15 +40,15 @@ class Cell extends AbstractContainer
     /**
      * Cell style.
      *
-     * @var ?\PhpOffice\PhpWord\Style\Cell
+     * @var ?CellStyle
      */
     private $style;
 
     /**
      * Create new instance.
      *
-     * @param int $width
-     * @param array|\PhpOffice\PhpWord\Style\Cell $style
+     * @param null|int $width
+     * @param array|CellStyle $style
      */
     public function __construct($width = null, $style = null)
     {
@@ -58,7 +59,7 @@ class Cell extends AbstractContainer
     /**
      * Get cell style.
      *
-     * @return ?\PhpOffice\PhpWord\Style\Cell
+     * @return ?CellStyle
      */
     public function getStyle()
     {

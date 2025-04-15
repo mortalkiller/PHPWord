@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -17,6 +18,7 @@
 
 namespace PhpOffice\PhpWordTests\Element;
 
+use PhpOffice\PhpWord\ComplexType\RubyProperties;
 use PhpOffice\PhpWord\Element\TextRun;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\SimpleType\Jc;
@@ -99,7 +101,7 @@ class TextRunTest extends \PHPUnit\Framework\TestCase
     public function testAddTextNotUTF8(): void
     {
         $oTextRun = new TextRun();
-        $element = $oTextRun->addText(utf8_decode('ééé'));
+        $element = $oTextRun->addText(utf8decode('ééé'));
 
         self::assertInstanceOf('PhpOffice\\PhpWord\\Element\\Text', $element);
         self::assertCount(1, $oTextRun->getElements());
@@ -181,5 +183,25 @@ class TextRunTest extends \PHPUnit\Framework\TestCase
 
         $oText->setParagraphStyle(['alignment' => Jc::CENTER, 'spaceAfter' => 100]);
         self::assertInstanceOf('PhpOffice\\PhpWord\\Style\\Paragraph', $oText->getParagraphStyle());
+    }
+
+    /**
+     * Add ruby element and get raw text.
+     */
+    public function testRubyElementGetText(): void
+    {
+        $oTextRun = new TextRun();
+        $oTextRun->setPhpWord(new PhpWord());
+
+        $properties = new RubyProperties();
+        $baseTextRun = new TextRun(null);
+        $baseTextRun->addText('私');
+        $rubyTextRun = new TextRun(null);
+        $rubyTextRun->addText('わたし');
+        $element = $oTextRun->addRuby($baseTextRun, $rubyTextRun, $properties);
+
+        self::assertInstanceOf('PhpOffice\\PhpWord\\Element\\Ruby', $element);
+        self::assertCount(1, $oTextRun->getElements());
+        self::assertEquals('私 (わたし)', $oTextRun->getText());
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -17,8 +18,10 @@
 
 namespace PhpOffice\PhpWordTests\Writer\Word2007\Part;
 
+use PhpOffice\PhpWord\Settings;
 use PhpOffice\PhpWord\Writer\Word2007;
 use PhpOffice\PhpWord\Writer\Word2007\Part\Header;
+use PhpOffice\PhpWordTests\TestHelperDOCX;
 
 /**
  * Test class for PhpOffice\PhpWord\Writer\Word2007\Part\Header.
@@ -44,12 +47,17 @@ class HeaderTest extends \PHPUnit\Framework\TestCase
         $container->addWatermark($imageSrc);
 
         $writer = new Word2007();
-        $writer->setUseDiskCaching(true);
+        $dir = Settings::getTempDir() . DIRECTORY_SEPARATOR . 'phpwordcachefooter';
+        if (!is_dir($dir) && !mkdir($dir)) {
+            self::fail('Unable to create temp directory');
+        }
+        $writer->setUseDiskCaching(true, $dir);
         $object = new Header();
         $object->setParentWriter($writer);
         $object->setElement($container);
         $xml = simplexml_load_string($object->write());
 
         self::assertInstanceOf('SimpleXMLElement', $xml);
+        TestHelperDOCX::deleteDir($dir);
     }
 }

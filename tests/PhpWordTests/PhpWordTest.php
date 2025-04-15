@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -18,6 +19,7 @@
 namespace PhpOffice\PhpWordTests;
 
 use BadMethodCallException;
+use DateTimeImmutable;
 use PhpOffice\PhpWord\Metadata\DocInfo;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\Settings;
@@ -35,8 +37,14 @@ class PhpWordTest extends \PHPUnit\Framework\TestCase
      */
     public function testConstruct(): void
     {
-        $phpWord = new PhpWord();
-        self::assertEquals(new DocInfo(), $phpWord->getDocInfo());
+        do {
+            $dtStart = new DateTimeImmutable();
+            $startSecond = $dtStart->format('s');
+            $phpWord = new PhpWord();
+            $docInfo = new DocInfo();
+            $endSecond = (new DateTimeImmutable('now'))->format('s');
+        } while ($startSecond !== $endSecond);
+        self::assertEquals($docInfo, $phpWord->getDocInfo());
         self::assertEquals(Settings::DEFAULT_FONT_NAME, $phpWord->getDefaultFontName());
         self::assertEquals(Settings::DEFAULT_FONT_SIZE, $phpWord->getDefaultFontSize());
     }
@@ -73,6 +81,30 @@ class PhpWordTest extends \PHPUnit\Framework\TestCase
         self::assertEquals(Settings::DEFAULT_FONT_SIZE, $phpWord->getDefaultFontSize());
         $phpWord->setDefaultFontSize($fontSize);
         self::assertEquals($fontSize, $phpWord->getDefaultFontSize());
+    }
+
+    /**
+     * Test set/get default asian font name.
+     */
+    public function testSetGetDefaultAsianFontName(): void
+    {
+        $phpWord = new PhpWord();
+        $fontName = 'Times New Roman';
+        self::assertEquals(Settings::DEFAULT_FONT_NAME, $phpWord->getDefaultAsianFontName());
+        $phpWord->setDefaultAsianFontName($fontName);
+        self::assertEquals($fontName, $phpWord->getDefaultAsianFontName());
+    }
+
+    /**
+     * Test set/get default font color.
+     */
+    public function testSetGetDefaultFontColor(): void
+    {
+        $phpWord = new PhpWord();
+        $fontColor = 'FF0000';
+        self::assertEquals(Settings::DEFAULT_FONT_COLOR, $phpWord->getDefaultFontColor());
+        $phpWord->setDefaultFontColor($fontColor);
+        self::assertEquals($fontColor, $phpWord->getDefaultFontColor());
     }
 
     /**
@@ -122,13 +154,14 @@ class PhpWordTest extends \PHPUnit\Framework\TestCase
      */
     public function testSave(): void
     {
-        $this->setOutputCallback(function (): void {
-        });
         $phpWord = new PhpWord();
         $section = $phpWord->addSection();
         $section->addText('Hello world!');
-
+        ob_start();
         self::assertTrue($phpWord->save('test.docx', 'Word2007', true));
+        $contents = ob_get_contents();
+        self::assertTrue(ob_end_clean());
+        self::assertNotEmpty($contents);
     }
 
     /**

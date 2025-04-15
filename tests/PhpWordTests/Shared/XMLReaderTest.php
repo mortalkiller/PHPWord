@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -59,6 +60,21 @@ class XMLReaderTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
+     * Office 365 add some slash before the path of XML file.
+     */
+    public function testDomFromZipOffice365(): void
+    {
+        $archiveFile = __DIR__ . '/../_files/xml/reader.zip';
+
+        $reader = new XMLReader();
+        $reader->getDomFromZip($archiveFile, '/test.xml');
+
+        self::assertTrue($reader->elementExists('/element/child'));
+
+        self::assertFalse($reader->getDomFromZip($archiveFile, 'non_existing_xml_file.xml'));
+    }
+
+    /**
      * Test that read from non existing archive throws exception.
      */
     public function testThrowsExceptionOnNonExistingArchive(): void
@@ -68,6 +84,33 @@ class XMLReaderTest extends \PHPUnit\Framework\TestCase
 
         $reader = new XMLReader();
         $reader->getDomFromZip($archiveFile, 'test.xml');
+    }
+
+    /**
+     * Test that read from invalid archive throws exception.
+     */
+    public function testThrowsExceptionOnZipArchiveOpenErrors(): void
+    {
+        /**
+         * @var string
+         */
+        $tempPath = tempnam(sys_get_temp_dir(), 'PhpWord');
+
+        // Simulate a corrupt archive
+        file_put_contents($tempPath, mt_rand());
+
+        $exceptionMessage = null;
+
+        try {
+            $reader = new XMLReader();
+            $reader->getDomFromZip($tempPath, 'test.xml');
+        } catch (Exception $e) {
+            $exceptionMessage = $e->getMessage();
+        }
+
+        self::assertNotNull($exceptionMessage);
+
+        unlink($tempPath);
     }
 
     /**

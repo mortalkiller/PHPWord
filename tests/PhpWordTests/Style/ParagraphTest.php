@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -18,6 +19,7 @@
 namespace PhpOffice\PhpWordTests\Style;
 
 use PhpOffice\PhpWord\PhpWord;
+use PhpOffice\PhpWord\Settings;
 use PhpOffice\PhpWord\SimpleType\LineSpacingRule;
 use PhpOffice\PhpWord\Style\Paragraph;
 use PhpOffice\PhpWord\Style\Tab;
@@ -91,13 +93,20 @@ class ParagraphTest extends \PHPUnit\Framework\TestCase
         foreach ($attributes as $key => $value) {
             $get = $this->findGetter($key, $value, $object);
             $object->setStyleValue("$key", $value);
-            if ('indent' == $key || 'hanging' == $key) {
+            if (('indent' == $key || 'hanging' == $key) && is_numeric($value)) {
                 $value = $value * 720;
             }
             self::assertEquals($value, $object->$get());
         }
     }
 
+    /**
+     * @param string $key
+     * @param mixed $value
+     * @param object $object
+     *
+     * @return string
+     */
     private function findGetter($key, $value, $object)
     {
         if (is_bool($value)) {
@@ -135,6 +144,155 @@ class ParagraphTest extends \PHPUnit\Framework\TestCase
         self::assertCount(2, $object->getTabs());
     }
 
+    public function testHanging(): void
+    {
+        $rand = mt_rand(0, 255);
+
+        $object = new Paragraph();
+        self::assertNull($object->getHanging());
+        self::assertInstanceOf(Paragraph::class, $object->setHanging($rand));
+        self::assertEquals($rand, $object->getHanging());
+        self::assertInstanceOf(Paragraph::class, $object->setHanging(null));
+        self::assertNull($object->getHanging());
+        self::assertInstanceOf(Paragraph::class, $object->setHanging($rand));
+        self::assertEquals($rand, $object->getHanging());
+        self::assertInstanceOf(Paragraph::class, $object->setHanging());
+        self::assertNull($object->getHanging());
+    }
+
+    public function testIndent(): void
+    {
+        $rand = mt_rand(0, 255);
+
+        $object = new Paragraph();
+        self::assertNull($object->getIndent());
+        self::assertInstanceOf(Paragraph::class, $object->setIndent($rand));
+        self::assertEquals($rand, $object->getIndent());
+        self::assertInstanceOf(Paragraph::class, $object->setIndent(null));
+        self::assertNull($object->getIndent());
+        self::assertInstanceOf(Paragraph::class, $object->setIndent($rand));
+        self::assertEquals($rand, $object->getIndent());
+        self::assertInstanceOf(Paragraph::class, $object->setIndent());
+        self::assertNull($object->getIndent());
+    }
+
+    public function testIndentation(): void
+    {
+        $rand = mt_rand(0, 255);
+        $rand2 = mt_rand(0, 255);
+
+        $object = new Paragraph();
+        self::assertNull($object->getIndentation());
+        // Set Basic indentation
+        self::assertInstanceOf(Paragraph::class, $object->setIndentation([]));
+        self::assertNotNull($object->getIndentation());
+        self::assertEquals(0, $object->getIndentation()->getLeft());
+        self::assertEquals(0, $object->getIndentation()->getRight());
+        self::assertEquals(0, $object->getIndentation()->getHanging());
+        self::assertEquals(0, $object->getIndentation()->getFirstLine());
+        // Set indentation : left
+        self::assertInstanceOf(Paragraph::class, $object->setIndentation([
+            'left' => $rand,
+        ]));
+        self::assertNotNull($object->getIndentation());
+        self::assertEquals($rand, $object->getIndentation()->getLeft());
+        self::assertEquals(0, $object->getIndentation()->getRight());
+        self::assertEquals(0, $object->getIndentation()->getHanging());
+        self::assertEquals(0, $object->getIndentation()->getFirstLine());
+        // Set indentation : right
+        self::assertInstanceOf(Paragraph::class, $object->setIndentation([
+            'right' => $rand,
+        ]));
+        self::assertNotNull($object->getIndentation());
+        self::assertEquals($rand, $object->getIndentation()->getLeft());
+        self::assertEquals($rand, $object->getIndentation()->getRight());
+        self::assertEquals(0, $object->getIndentation()->getHanging());
+        self::assertEquals(0, $object->getIndentation()->getFirstLine());
+        // Set indentation : hanging
+        self::assertInstanceOf(Paragraph::class, $object->setIndentation([
+            'hanging' => $rand,
+        ]));
+        self::assertNotNull($object->getIndentation());
+        self::assertEquals($rand, $object->getIndentation()->getLeft());
+        self::assertEquals($rand, $object->getIndentation()->getRight());
+        self::assertEquals($rand, $object->getIndentation()->getHanging());
+        self::assertEquals(0, $object->getIndentation()->getFirstLine());
+        // Set indentation : firstline
+        self::assertInstanceOf(Paragraph::class, $object->setIndentation([
+            'firstline' => $rand,
+        ]));
+        self::assertNotNull($object->getIndentation());
+        self::assertEquals($rand, $object->getIndentation()->getLeft());
+        self::assertEquals($rand, $object->getIndentation()->getRight());
+        self::assertEquals($rand, $object->getIndentation()->getHanging());
+        self::assertEquals($rand, $object->getIndentation()->getFirstLine());
+        // Replace indentation : left & firstline
+        self::assertInstanceOf(Paragraph::class, $object->setIndentation([
+            'left' => $rand2,
+            'firstline' => $rand2,
+        ]));
+        self::assertNotNull($object->getIndentation());
+        self::assertEquals($rand2, $object->getIndentation()->getLeft());
+        self::assertEquals($rand, $object->getIndentation()->getRight());
+        self::assertEquals($rand, $object->getIndentation()->getHanging());
+        self::assertEquals($rand2, $object->getIndentation()->getFirstLine());
+        // Replace indentation : N/A
+        self::assertInstanceOf(Paragraph::class, $object->setIndentation());
+        self::assertNotNull($object->getIndentation());
+        self::assertEquals($rand2, $object->getIndentation()->getLeft());
+        self::assertEquals($rand, $object->getIndentation()->getRight());
+        self::assertEquals($rand, $object->getIndentation()->getHanging());
+        self::assertEquals($rand2, $object->getIndentation()->getFirstLine());
+    }
+
+    public function testIndentFirstLine(): void
+    {
+        $rand = mt_rand(0, 255);
+
+        $object = new Paragraph();
+        self::assertNull($object->getIndentFirstLine());
+        self::assertInstanceOf(Paragraph::class, $object->setIndentFirstLine($rand));
+        self::assertEquals($rand, $object->getIndentFirstLine());
+        self::assertInstanceOf(Paragraph::class, $object->setIndentFirstLine(null));
+        self::assertNull($object->getIndentFirstLine());
+        self::assertInstanceOf(Paragraph::class, $object->setIndentFirstLine($rand));
+        self::assertEquals($rand, $object->getIndentFirstLine());
+        self::assertInstanceOf(Paragraph::class, $object->setIndentFirstLine());
+        self::assertNull($object->getIndentFirstLine());
+    }
+
+    public function testIndentLeft(): void
+    {
+        $rand = mt_rand(0, 255);
+
+        $object = new Paragraph();
+        self::assertNull($object->getIndentLeft());
+        self::assertInstanceOf(Paragraph::class, $object->setIndentLeft($rand));
+        self::assertEquals($rand, $object->getIndentLeft());
+        self::assertInstanceOf(Paragraph::class, $object->setIndentLeft(null));
+        self::assertNull($object->getIndentLeft());
+        self::assertInstanceOf(Paragraph::class, $object->setIndentLeft($rand));
+        self::assertEquals($rand, $object->getIndentLeft());
+        self::assertInstanceOf(Paragraph::class, $object->setIndentLeft());
+        self::assertNull($object->getIndentLeft());
+    }
+
+    public function testIndentRight(): void
+    {
+        $rand = mt_rand(0, 255);
+
+        $object = new Paragraph();
+        self::assertNull($object->getIndentRight());
+        self::assertInstanceOf(Paragraph::class, $object->setIndentRight($rand));
+        self::assertEquals($rand, $object->getIndentRight());
+        self::assertInstanceOf(Paragraph::class, $object->setIndentRight(null));
+        self::assertNull($object->getIndentRight());
+        self::assertInstanceOf(Paragraph::class, $object->setIndentRight($rand));
+        self::assertEquals($rand, $object->getIndentRight());
+        self::assertInstanceOf(Paragraph::class, $object->setIndentRight());
+        self::assertNull($object->getIndentRight());
+    }
+
     /**
      * Line height.
      */
@@ -157,6 +315,7 @@ class ParagraphTest extends \PHPUnit\Framework\TestCase
 
         // Test setter
         $text->getParagraphStyle()->setLineHeight(3.0);
+        TestHelperDOCX::clear();
         $doc = TestHelperDOCX::getDocument($phpWord);
         $element = $doc->getElement('/w:document/w:body/w:p/w:pPr/w:spacing');
 
@@ -185,5 +344,34 @@ class ParagraphTest extends \PHPUnit\Framework\TestCase
         $this->expectException(\PhpOffice\PhpWord\Exception\InvalidStyleException::class);
         $object = new Paragraph();
         $object->setLineHeight('a');
+    }
+
+    public function testBidiVisual(): void
+    {
+        $object = new Paragraph();
+        self::assertNull($object->isBidi());
+        self::assertInstanceOf(Paragraph::class, $object->setBidi(true));
+        self::assertTrue($object->isBidi());
+        self::assertInstanceOf(Paragraph::class, $object->setBidi(false));
+        self::assertFalse($object->isBidi());
+        self::assertInstanceOf(Paragraph::class, $object->setBidi(null));
+        self::assertNull($object->isBidi());
+    }
+
+    public function testBidiVisualSettings(): void
+    {
+        Settings::setDefaultRtl(null);
+        $object = new Paragraph();
+        self::assertNull($object->isBidi());
+
+        Settings::setDefaultRtl(true);
+        $object = new Paragraph();
+        self::assertTrue($object->isBidi());
+
+        Settings::setDefaultRtl(false);
+        $object = new Paragraph();
+        self::assertFalse($object->isBidi());
+
+        Settings::setDefaultRtl(null);
     }
 }

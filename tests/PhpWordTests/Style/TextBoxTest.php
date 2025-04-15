@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -24,6 +25,7 @@ use PHPUnit\Framework\TestCase;
  * Test class for PhpOffice\PhpWord\Style\Image.
  *
  * @coversDefaultClass \PhpOffice\PhpWord\Style\Image
+ *
  * @runTestsInSeparateProcesses
  */
 class TextBoxTest extends TestCase

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -19,14 +20,14 @@ namespace PhpOffice\PhpWordTests\Element;
 
 use BadMethodCallException;
 use PhpOffice\PhpWord\Element\Header;
-use PhpOffice\PhpWordTests\AbstractWebServerEmbeddedTest;
+use PhpOffice\PhpWordTests\AbstractWebServerEmbedded;
 
 /**
  * Test class for PhpOffice\PhpWord\Element\Header.
  *
  * @runTestsInSeparateProcesses
  */
-class HeaderTest extends AbstractWebServerEmbeddedTest
+class HeaderTest extends AbstractWebServerEmbedded
 {
     /**
      * New instance.
@@ -60,7 +61,7 @@ class HeaderTest extends AbstractWebServerEmbeddedTest
     public function testAddTextNotUTF8(): void
     {
         $oHeader = new Header(1);
-        $element = $oHeader->addText(utf8_decode('ééé'));
+        $element = $oHeader->addText(utf8decode('ééé'));
 
         self::assertInstanceOf('PhpOffice\\PhpWord\\Element\\Text', $element);
         self::assertCount(1, $oHeader->getElements());
@@ -153,7 +154,7 @@ class HeaderTest extends AbstractWebServerEmbeddedTest
     public function testAddPreserveTextNotUTF8(): void
     {
         $oHeader = new Header(1);
-        $element = $oHeader->addPreserveText(utf8_decode('ééé'));
+        $element = $oHeader->addPreserveText(utf8decode('ééé'));
 
         self::assertCount(1, $oHeader->getElements());
         self::assertInstanceOf('PhpOffice\\PhpWord\\Element\\PreserveText', $element);

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -103,14 +104,15 @@ class ODTextTest extends \PHPUnit\Framework\TestCase
      */
     public function testSavePhpOutput(): void
     {
-        $this->setOutputCallback(function (): void {
-        });
         $phpWord = new PhpWord();
         $section = $phpWord->addSection();
         $section->addText('Test');
         $writer = new ODText($phpWord);
+        ob_start();
         $writer->save('php://output');
-        self::assertNotNull($this->getActualOutput());
+        $contents = ob_get_contents();
+        self::assertTrue(ob_end_clean());
+        self::assertNotEmpty($contents);
     }
 
     /**

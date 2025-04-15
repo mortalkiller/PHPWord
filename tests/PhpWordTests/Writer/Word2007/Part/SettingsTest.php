@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -463,6 +464,22 @@ class SettingsTest extends \PHPUnit\Framework\TestCase
         $file = 'word/settings.xml';
 
         $path = '/w:settings/w:doNotHyphenateCaps';
+        self::assertTrue($doc->elementExists($path, $file));
+
+        $element = $doc->getElement($path, $file);
+        self::assertSame('true', $element->getAttribute('w:val'));
+    }
+
+    public function testBookFoldPrinting(): void
+    {
+        $phpWord = new PhpWord();
+        $phpWord->getSettings()->setBookFoldPrinting(true);
+
+        $doc = TestHelperDOCX::getDocument($phpWord);
+
+        $file = 'word/settings.xml';
+
+        $path = '/w:settings/w:bookFoldPrinting';
         self::assertTrue($doc->elementExists($path, $file));
 
         $element = $doc->getElement($path, $file);

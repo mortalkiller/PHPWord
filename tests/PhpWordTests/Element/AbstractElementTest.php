@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -17,6 +18,8 @@
 
 namespace PhpOffice\PhpWordTests\Element;
 
+use PhpOffice\PhpWord\Element\AbstractElement;
+
 /**
  * Test class for PhpOffice\PhpWord\Element\AbstractElement.
  */
@@ -27,7 +30,13 @@ class AbstractElementTest extends \PHPUnit\Framework\TestCase
      */
     public function testElementIndex(): void
     {
-        $stub = $this->getMockForAbstractClass('\PhpOffice\PhpWord\Element\AbstractElement');
+        if (method_exists($this, 'getMockForAbstractClass')) {
+            $stub = $this->getMockForAbstractClass(AbstractElement::class);
+        } else {
+            /** @var AbstractElement $stub */
+            $stub = new class() extends AbstractElement {
+            };
+        }
         $ival = mt_rand(0, 100);
         $stub->setElementIndex($ival);
         self::assertEquals($ival, $stub->getElementIndex());
@@ -38,7 +47,13 @@ class AbstractElementTest extends \PHPUnit\Framework\TestCase
      */
     public function testElementId(): void
     {
-        $stub = $this->getMockForAbstractClass('\PhpOffice\PhpWord\Element\AbstractElement');
+        if (method_exists($this, 'getMockForAbstractClass')) {
+            $stub = $this->getMockForAbstractClass(AbstractElement::class);
+        } else {
+            /** @var AbstractElement $stub */
+            $stub = new class() extends AbstractElement {
+            };
+        }
         $stub->setElementId();
         self::assertEquals(6, strlen($stub->getElementId()));
     }

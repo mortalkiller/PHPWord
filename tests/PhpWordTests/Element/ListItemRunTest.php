@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -114,7 +115,7 @@ class ListItemRunTest extends \PHPUnit\Framework\TestCase
     public function testAddTextNotUTF8(): void
     {
         $oListItemRun = new ListItemRun();
-        $element = $oListItemRun->addText(utf8_decode('ééé'));
+        $element = $oListItemRun->addText(utf8decode('ééé'));
 
         self::assertInstanceOf('PhpOffice\\PhpWord\\Element\\Text', $element);
         self::assertCount(1, $oListItemRun->getElements());

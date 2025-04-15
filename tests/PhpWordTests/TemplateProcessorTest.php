@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -25,6 +26,8 @@ use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\Settings;
 use PhpOffice\PhpWord\TemplateProcessor;
+use Throwable;
+use TypeError;
 use ZipArchive;
 
 /**
@@ -36,16 +39,47 @@ use ZipArchive;
  */
 final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
 {
+    /** @var ?TemplateProcessor */
+    private $templateProcessor;
+
+    private function getTemplateProcessor(string $filename): TemplateProcessor
+    {
+        $this->templateProcessor = new TemplateProcessor($filename);
+
+        return $this->templateProcessor;
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->templateProcessor !== null) {
+            $filename = $this->templateProcessor->getTempDocumentFilename();
+            $this->templateProcessor = null;
+            if (file_exists($filename)) {
+                @unlink($filename);
+            }
+        }
+    }
+
     /**
      * Construct test.
      *
      * @covers ::__construct
+     * @covers ::__destruct
+     * @covers \PhpOffice\PhpWord\Shared\ZipArchive::close
      */
     public function testTheConstruct(): void
     {
-        $object = new TemplateProcessor(__DIR__ . '/_files/templates/blank.docx');
+        $object = $this->getTemplateProcessor(__DIR__ . '/_files/templates/blank.docx');
         self::assertInstanceOf('PhpOffice\\PhpWord\\TemplateProcessor', $object);
         self::assertEquals([], $object->getVariables());
+        $object->save();
+
+        try {
+            $object->zip()->close();
+            self::fail('Expected exception for double close');
+        } catch (Throwable $e) {
+            // nothing to do here
+        }
     }
 
     /**
@@ -54,11 +88,8 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
      * @covers ::save
      * @covers ::zip
      */
-    public function testTemplateCanBeSavedInTemporaryLocation()
+    public function xtestTemplateCanBeSavedInTemporaryLocation(string $templateFqfn, TemplateProcessor $templateProcessor): string
     {
-        $templateFqfn = __DIR__ . '/_files/templates/with_table_macros.docx';
-
-        $templateProcessor = new TemplateProcessor($templateFqfn);
         $xslDomDocument = new DOMDocument();
         $xslDomDocument->load(__DIR__ . '/_files/xsl/remove_tables_by_needle.xsl');
         foreach (['${employee.', '${scoreboard.', '${reference.'] as $needle) {
@@ -103,13 +134,13 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
      * XSL stylesheet can be applied.
      *
      * @covers ::applyXslStyleSheet
-     *
-     * @depends testTemplateCanBeSavedInTemporaryLocation
-     *
-     * @param string $actualDocumentFqfn
      */
-    public function testXslStyleSheetCanBeApplied($actualDocumentFqfn): void
+    public function testXslStyleSheetCanBeApplied(): void
     {
+        $templateFqfn = __DIR__ . '/_files/templates/with_table_macros.docx';
+        $templateProcessor = $this->getTemplateProcessor($templateFqfn);
+
+        $actualDocumentFqfn = $this->xtestTemplateCanBeSavedInTemporaryLocation($templateFqfn, $templateProcessor);
         $expectedDocumentFqfn = __DIR__ . '/_files/documents/without_table_macros.docx';
 
         $actualDocumentZip = new ZipArchive();
@@ -130,9 +161,9 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
             throw new Exception("Could not close zip file \"{$expectedDocumentFqfn}\".");
         }
 
-        self::assertXmlStringEqualsXmlString($expectedHeaderXml, $actualHeaderXml);
-        self::assertXmlStringEqualsXmlString($expectedMainPartXml, $actualMainPartXml);
-        self::assertXmlStringEqualsXmlString($expectedFooterXml, $actualFooterXml);
+        self::assertSame($expectedHeaderXml, $actualHeaderXml);
+        self::assertSame($expectedMainPartXml, $actualMainPartXml);
+        self::assertSame($expectedFooterXml, $actualFooterXml);
     }
 
     /**
@@ -142,14 +173,16 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
      */
     public function testXslStyleSheetCanNotBeAppliedOnFailureOfSettingParameterValue(): void
     {
-        $this->expectException(\PhpOffice\PhpWord\Exception\Exception::class);
-        $this->expectExceptionMessage('Could not set values for the given XSL style sheet parameters.');
-        // Test is not needed for PHP 8.0, because internally validation throws TypeError exception.
         if (\PHP_VERSION_ID >= 80000) {
-            self::markTestSkipped('not needed for PHP 8.0');
+            // PHP 8+ internal validation throws TypeError.
+            $this->expectException(TypeError::class);
+            $this->expectExceptionMessage('must contain only string keys');
+        } else {
+            $this->expectException(\PhpOffice\PhpWord\Exception\Exception::class);
+            $this->expectExceptionMessage('Could not set values for the given XSL style sheet parameters.');
         }
 
-        $templateProcessor = new TemplateProcessor(__DIR__ . '/_files/templates/blank.docx');
+        $templateProcessor = $this->getTemplateProcessor(__DIR__ . '/_files/templates/blank.docx');
 
         $xslDomDocument = new DOMDocument();
         $xslDomDocument->load(__DIR__ . '/_files/xsl/passthrough.xsl');
@@ -170,7 +203,7 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectException(\PhpOffice\PhpWord\Exception\Exception::class);
         $this->expectExceptionMessage('Could not load the given XML document.');
-        $templateProcessor = new TemplateProcessor(__DIR__ . '/_files/templates/corrupted_main_document_part.docx');
+        $templateProcessor = $this->getTemplateProcessor(__DIR__ . '/_files/templates/corrupted_main_document_part.docx');
 
         $xslDomDocument = new DOMDocument();
         $xslDomDocument->load(__DIR__ . '/_files/xsl/passthrough.xsl');
@@ -189,7 +222,7 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
      */
     public function testDeleteRow(): void
     {
-        $templateProcessor = new TemplateProcessor(__DIR__ . '/_files/templates/delete-row.docx');
+        $templateProcessor = $this->getTemplateProcessor(__DIR__ . '/_files/templates/delete-row.docx');
 
         self::assertEquals(
             ['deleteMe', 'deleteMeToo'],
@@ -215,7 +248,7 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
      */
     public function testCloneRow(): void
     {
-        $templateProcessor = new TemplateProcessor(__DIR__ . '/_files/templates/clone-merge.docx');
+        $templateProcessor = $this->getTemplateProcessor(__DIR__ . '/_files/templates/clone-merge.docx');
 
         self::assertEquals(
             ['tableHeader', 'userId', 'userName', 'userLocation'],
@@ -223,7 +256,7 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
         );
 
         $docName = 'clone-test-result.docx';
-        $templateProcessor->setValue('tableHeader', utf8_decode('ééé'));
+        $templateProcessor->setValue('tableHeader', 'ééé');
         $templateProcessor->cloneRow('userId', 1);
         $templateProcessor->setValue('userId#1', 'Test');
         $templateProcessor->saveAs($docName);
@@ -239,7 +272,7 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
      */
     public function testCloneRowWithCustomMacro(): void
     {
-        $templateProcessor = new TemplateProcessor(__DIR__ . '/_files/templates/clone-merge-with-custom-macro.docx');
+        $templateProcessor = $this->getTemplateProcessor(__DIR__ . '/_files/templates/clone-merge-with-custom-macro.docx');
 
         $templateProcessor->setMacroOpeningChars('{#');
         $templateProcessor->setMacroClosingChars('#}');
@@ -250,7 +283,7 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
         );
 
         $docName = 'clone-test-result.docx';
-        $templateProcessor->setValue('tableHeader', utf8_decode('ééé'));
+        $templateProcessor->setValue('tableHeader', 'ééé');
         $templateProcessor->cloneRow('userId', 1);
         $templateProcessor->setValue('userId#1', 'Test');
         $templateProcessor->saveAs($docName);
@@ -396,7 +429,7 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
      */
     public function testMacrosCanBeReplacedInHeaderAndFooter(): void
     {
-        $templateProcessor = new TemplateProcessor(__DIR__ . '/_files/templates/header-footer.docx');
+        $templateProcessor = $this->getTemplateProcessor(__DIR__ . '/_files/templates/header-footer.docx');
 
         self::assertEquals(['documentContent', 'headerValue:100:100', 'footerValue'], $templateProcessor->getVariables());
 
@@ -417,7 +450,7 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
      */
     public function testCustomMacrosCanBeReplacedInHeaderAndFooter(): void
     {
-        $templateProcessor = new TemplateProcessor(__DIR__ . '/_files/templates/header-footer-with-custom-macro.docx');
+        $templateProcessor = $this->getTemplateProcessor(__DIR__ . '/_files/templates/header-footer-with-custom-macro.docx');
         $templateProcessor->setMacroOpeningChars('{{');
         $templateProcessor->setMacroClosingChars('}}');
 
@@ -439,7 +472,7 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
      */
     public function testSetValue(): void
     {
-        $templateProcessor = new TemplateProcessor(__DIR__ . '/_files/templates/clone-merge.docx');
+        $templateProcessor = $this->getTemplateProcessor(__DIR__ . '/_files/templates/clone-merge.docx');
         Settings::setOutputEscapingEnabled(true);
         $helloworld = "hello\nworld";
         $templateProcessor->setValue('userName', $helloworld);
@@ -454,7 +487,7 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
      */
     public function testSetValueWithCustomMacro(): void
     {
-        $templateProcessor = new TemplateProcessor(__DIR__ . '/_files/templates/clone-merge-with-custom-macro.docx');
+        $templateProcessor = $this->getTemplateProcessor(__DIR__ . '/_files/templates/clone-merge-with-custom-macro.docx');
         $templateProcessor->setMacroChars('{#', '#}');
         Settings::setOutputEscapingEnabled(true);
         $helloworld = "hello\nworld";
@@ -582,12 +615,71 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
             <w:r>
                 <w:t xml:space="preserve">Hello ${firstname} ${lastname}</w:t>
             </w:r>
-        </w:p>';
+        </w:p>
+        <w:p>
+            <w:r>
+                <w:t xml:space="preserve">Hello ${firstname} ${lastname}</w:t>
+            </w:r>
+        </w:p>
+        <w:p>
+            <w:r>
+                <w:t xml:space="preserve">Hello ${firstname} ${lastname}</w:t>
+            </w:r>
+        </w:p>
+        ';
 
         $templateProcessor = new TestableTemplateProcesor($mainPart);
         $templateProcessor->setValues(['firstname' => 'John', 'lastname' => 'Doe']);
-
         self::assertStringContainsString('Hello John Doe', $templateProcessor->getMainPart());
+        self::assertStringNotContainsString('Hello ${firstname} ${lastname}', $templateProcessor->getMainPart());
+
+        // test with a specific limit that is lower than the number of replacements
+        $templateProcessor = new TestableTemplateProcesor($mainPart);
+        $templateProcessor->setValues(['firstname' => 'Jane', 'lastname' => 'Smith'], 2);
+        $variablesCounts = $templateProcessor->getVariableCount();
+
+        self::assertStringContainsString('Hello Jane Smith', $templateProcessor->getMainPart());
+        self::assertStringContainsString('Hello ${firstname} ${lastname}', $templateProcessor->getMainPart());
+        self::assertEquals(1, $variablesCounts['firstname']);
+        self::assertEquals(1, $variablesCounts['lastname']);
+
+        // test with a limit for only one replacement
+        $templateProcessor = new TestableTemplateProcesor($mainPart);
+        $templateProcessor->setValues(['firstname' => 'Alice', 'lastname' => 'Wonderland'], 1);
+        $variablesCounts = $templateProcessor->getVariableCount();
+
+        self::assertStringContainsString('Hello Alice Wonderland', $templateProcessor->getMainPart());
+        self::assertStringContainsString('Hello ${firstname} ${lastname}', $templateProcessor->getMainPart());
+        self::assertEquals(2, $variablesCounts['firstname']);
+        self::assertEquals(2, $variablesCounts['lastname']);
+
+        // Test with a limit of 0 for a result with no replacements
+        $templateProcessor = new TestableTemplateProcesor($mainPart);
+        $templateProcessor->setValues(['firstname' => 'Test', 'lastname' => 'User'], 0);
+        $variablesCounts = $templateProcessor->getVariableCount();
+
+        self::assertStringContainsString('Hello ${firstname} ${lastname}', $templateProcessor->getMainPart());
+        self::assertStringNotContainsString('Hello Test User', $templateProcessor->getMainPart());
+        self::assertEquals(3, $variablesCounts['firstname']);
+        self::assertEquals(3, $variablesCounts['lastname']);
+    }
+
+    /**
+     * @covers ::setValues
+     */
+    public function testSetValuesMultiLine(): void
+    {
+        $mainPart = '<?xml version="1.0" encoding="UTF-8"?>
+        <w:p>
+            <w:r>
+                <w:t xml:space="preserve">Address: ${address}</w:t>
+            </w:r>
+        </w:p>';
+
+        $templateProcessor = new TestableTemplateProcesor($mainPart);
+        $templateProcessor->setValues(['address' => "Peter Pan\nNeverland"]);
+
+        self::assertStringContainsString('Address: Peter Pan</w:t><w:br/><w:t>Neverland', $templateProcessor->getMainPart());
     }
 
     /**
@@ -610,11 +702,164 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
+     * @covers ::setCheckbox
+     */
+    public function testSetCheckbox(): void
+    {
+        $mainPart = '<?xml version="1.0" encoding="UTF-8"?>
+        <w:p>
+            <w:sdt>
+                <w:sdtPr>
+                    <w:alias w:val="${checkbox}"/>
+                    <w14:checkbox>
+                        <w14:checked w14:val="0"/>
+                    </w14:checkbox>
+                </w:sdtPr>
+                <w:sdtContent>
+                    <w:r>
+                        <w:t>☐</w:t>
+                    </w:r>
+                </w:sdtContent>
+            </w:sdt>
+        </w:p>
+        <w:p>
+            <w:sdt>
+                <w:sdtPr>
+                    <w:alias w:val="${checkbox2}"/>
+                    <w14:checkbox>
+                        <w14:checked w14:val="1"/>
+                    </w14:checkbox>
+                </w:sdtPr>
+                <w:sdtContent>
+                    <w:r>
+                        <w:t>☒</w:t>
+                    </w:r>
+                </w:sdtContent>
+            </w:sdt>
+        </w:p>';
+
+        $result = '<?xml version="1.0" encoding="UTF-8"?>
+        <w:p>
+            <w:sdt>
+                <w:sdtPr>
+                    <w:alias w:val="${checkbox}"/>
+                    <w14:checkbox>
+                        <w14:checked w14:val="1"/>
+                    </w14:checkbox>
+                </w:sdtPr>
+                <w:sdtContent>
+                    <w:r>
+                        <w:t>☒</w:t>
+                    </w:r>
+                </w:sdtContent>
+            </w:sdt>
+        </w:p>
+        <w:p>
+            <w:sdt>
+                <w:sdtPr>
+                    <w:alias w:val="${checkbox2}"/>
+                    <w14:checkbox>
+                        <w14:checked w14:val="0"/>
+                    </w14:checkbox>
+                </w:sdtPr>
+                <w:sdtContent>
+                    <w:r>
+                        <w:t>☐</w:t>
+                    </w:r>
+                </w:sdtContent>
+            </w:sdt>
+        </w:p>';
+
+        $templateProcessor = new TestableTemplateProcesor($mainPart);
+        $templateProcessor->setCheckbox('checkbox', true);
+        $templateProcessor->setCheckbox('checkbox2', false);
+
+        self::assertEquals(preg_replace('/>\s+</', '><', $result), preg_replace('/>\s+</', '><', $templateProcessor->getMainPart()));
+    }
+
+    /**
+     * @covers ::setCheckbox
+     */
+    public function testSetCheckboxWithCustomMacro(): void
+    {
+        $mainPart = '<?xml version="1.0" encoding="UTF-8"?>
+        <w:p>
+            <w:sdt>
+                <w:sdtPr>
+                    <w:alias w:val="{#checkbox#}"/>
+                    <w14:checkbox>
+                        <w14:checked w14:val="0"/>
+                    </w14:checkbox>
+                </w:sdtPr>
+                <w:sdtContent>
+                    <w:r>
+                        <w:t>☐</w:t>
+                    </w:r>
+                </w:sdtContent>
+            </w:sdt>
+        </w:p>
+        <w:p>
+            <w:sdt>
+                <w:sdtPr>
+                    <w:alias w:val="{#checkbox2#}"/>
+                    <w14:checkbox>
+                        <w14:checked w14:val="1"/>
+                    </w14:checkbox>
+                </w:sdtPr>
+                <w:sdtContent>
+                    <w:r>
+                        <w:t>☒</w:t>
+                    </w:r>
+                </w:sdtContent>
+            </w:sdt>
+        </w:p>';
+
+        $result = '<?xml version="1.0" encoding="UTF-8"?>
+        <w:p>
+            <w:sdt>
+                <w:sdtPr>
+                    <w:alias w:val="{#checkbox#}"/>
+                    <w14:checkbox>
+                        <w14:checked w14:val="1"/>
+                    </w14:checkbox>
+                </w:sdtPr>
+                <w:sdtContent>
+                    <w:r>
+                        <w:t>☒</w:t>
+                    </w:r>
+                </w:sdtContent>
+            </w:sdt>
+        </w:p>
+        <w:p>
+            <w:sdt>
+                <w:sdtPr>
+                    <w:alias w:val="{#checkbox2#}"/>
+                    <w14:checkbox>
+                        <w14:checked w14:val="0"/>
+                    </w14:checkbox>
+                </w:sdtPr>
+                <w:sdtContent>
+                    <w:r>
+                        <w:t>☐</w:t>
+                    </w:r>
+                </w:sdtContent>
+            </w:sdt>
+        </w:p>';
+
+        $templateProcessor = new TestableTemplateProcesor($mainPart);
+        $templateProcessor->setMacroChars('{#', '#}');
+        $templateProcessor->setCheckbox('checkbox', true);
+        $templateProcessor->setCheckbox('checkbox2', false);
+
+        self::assertEquals(preg_replace('/>\s+</', '><', $result), preg_replace('/>\s+</', '><', $templateProcessor->getMainPart()));
+    }
+
+    /**
      * @covers ::setImageValue
      */
     public function testSetImageValue(): void
     {
-        $templateProcessor = new TemplateProcessor(__DIR__ . '/_files/templates/header-footer.docx');
+        $templateProcessor = $this->getTemplateProcessor(__DIR__ . '/_files/templates/header-footer.docx');
         $imagePath = __DIR__ . '/_files/images/earth.jpg';
 
         $variablesReplace = [
@@ -660,15 +905,15 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
 
         // dynamic generated doc
         $testFileName = 'images-test-sample.docx';
-        $phpWord = new \PhpOffice\PhpWord\PhpWord();
+        $phpWord = new PhpWord();
         $section = $phpWord->addSection();
         $section->addText('${Test:width=100:ratio=true}');
-        $objWriter = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
+        $objWriter = IOFactory::createWriter($phpWord, 'Word2007');
         $objWriter->save($testFileName);
         self::assertFileExists($testFileName, "Generated file '{$testFileName}' not found!");
 
         $resultFileName = 'images-test-result.docx';
-        $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor($testFileName);
+        $templateProcessor = new TemplateProcessor($testFileName);
         unlink($testFileName);
         $templateProcessor->setImageValue('Test', $imagePath);
         $templateProcessor->setImageValue('Test1', $imagePath);
@@ -694,7 +939,7 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
      */
     public function testCloneDeleteBlock(): void
     {
-        $templateProcessor = new TemplateProcessor(__DIR__ . '/_files/templates/clone-delete-block.docx');
+        $templateProcessor = $this->getTemplateProcessor(__DIR__ . '/_files/templates/clone-delete-block.docx');
 
         self::assertEquals(
             ['DELETEME', '/DELETEME', 'CLONEME', 'blockVariable', '/CLONEME'],
@@ -734,7 +979,7 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
         $templatePath = 'test.docx';
         $objWriter->save($templatePath);
 
-        $templateProcessor = new TemplateProcessor($templatePath);
+        $templateProcessor = $this->getTemplateProcessor($templatePath);
         $variableCount = $templateProcessor->getVariableCount();
         unlink($templatePath);
 
@@ -771,7 +1016,7 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
         $templatePath = 'test.docx';
         $objWriter->save($templatePath);
 
-        $templateProcessor = new TemplateProcessor($templatePath);
+        $templateProcessor = $this->getTemplateProcessor($templatePath);
         $templateProcessor->setMacroChars('{{', '}}');
         $variableCount = $templateProcessor->getVariableCount();
         unlink($templatePath);
@@ -809,7 +1054,7 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
         $objWriter->save($templatePath);
 
         // replace placeholders and save the file
-        $templateProcessor = new TemplateProcessor($templatePath);
+        $templateProcessor = $this->getTemplateProcessor($templatePath);
         $templateProcessor->setValue('title', 'Some title');
         $templateProcessor->cloneBlock('subreport', 2);
         $templateProcessor->setValue('subreport.id', '123', 1);
@@ -822,7 +1067,7 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
         // and the placeholders have been replaced correctly
         $phpWord = IOFactory::load($templatePath);
         $sections = $phpWord->getSections();
-        /** @var \PhpOffice\PhpWord\Element\TextRun[] $actualElements */
+        /** @var TextRun[] $actualElements */
         $actualElements = $sections[0]->getElements();
         unlink($templatePath);
         $expectedElements = [
@@ -862,7 +1107,7 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
         $objWriter->save($templatePath);
 
         // replace placeholders and save the file
-        $templateProcessor = new TemplateProcessor($templatePath);
+        $templateProcessor = $this->getTemplateProcessor($templatePath);
         $templateProcessor->setMacroChars('{{', '}}');
         $templateProcessor->setValue('title', 'Some title');
         $templateProcessor->cloneBlock('subreport', 2);
@@ -876,7 +1121,7 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
         // and the placeholders have been replaced correctly
         $phpWord = IOFactory::load($templatePath);
         $sections = $phpWord->getSections();
-        /** @var \PhpOffice\PhpWord\Element\TextRun[] $actualElements */
+        /** @var TextRun[] $actualElements */
         $actualElements = $sections[0]->getElements();
 
         unlink($templatePath);
@@ -1151,7 +1396,7 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
      */
     public function testMainPartNameDetection(): void
     {
-        $templateProcessor = new TemplateProcessor(__DIR__ . '/_files/templates/document22-xml.docx');
+        $templateProcessor = $this->getTemplateProcessor(__DIR__ . '/_files/templates/document22-xml.docx');
 
         $variables = ['test'];
 
@@ -1163,7 +1408,7 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
      */
     public function testMainPartNameDetectionWithCustomMacro(): void
     {
-        $templateProcessor = new TemplateProcessor(__DIR__ . '/_files/templates/document22-with-custom-macro-xml.docx');
+        $templateProcessor = $this->getTemplateProcessor(__DIR__ . '/_files/templates/document22-with-custom-macro-xml.docx');
         $templateProcessor->setMacroOpeningChars('{#');
         $templateProcessor->setMacroClosingChars('#}');
         $variables = ['test'];
@@ -1436,5 +1681,102 @@ final class TemplateProcessorTest extends \PHPUnit\Framework\TestCase
 
         $templateProcessor->setUpdateFields(false);
         self::assertStringContainsString('<w:updateFields w:val="false"/>', $templateProcessor->getSettingsPart());
+    }
+
+    public function testEnsureUtf8Encoded(): void
+    {
+        $mainPart = '<w:tbl>
+            <w:tr>
+                <w:tc>
+                    <w:tcPr>
+                        <w:vMerge w:val="restart"/>
+                    </w:tcPr>
+                    <w:p>
+                        <w:r>
+                            <w:t t=1>${stringZero}</w:t>
+                        </w:r>
+                    </w:p>
+                </w:tc>
+                <w:tc>
+                    <w:p>
+                        <w:r>
+                            <w:t t=2>${intZero}</w:t>
+                        </w:r>
+                    </w:p>
+                </w:tc>
+                <w:tc>
+                    <w:p>
+                        <w:r>
+                            <w:t t=3>${stringTest}</w:t>
+                        </w:r>
+                    </w:p>
+                </w:tc>
+                <w:tc>
+                    <w:p>
+                        <w:r>
+                            <w:t t=4>${null}</w:t>
+                        </w:r>
+                    </w:p>
+                </w:tc>
+                <w:tc>
+                    <w:p>
+                        <w:r>
+                            <w:t t=5>${floatZero}</w:t>
+                        </w:r>
+                    </w:p>
+                </w:tc>
+                <w:tc>
+                    <w:p>
+                        <w:r>
+                            <w:t t=6>${intTen}</w:t>
+                        </w:r>
+                    </w:p>
+                </w:tc>
+                <w:tc>
+                    <w:p>
+                        <w:r>
+                            <w:t t=7>${boolFalse}</w:t>
+                        </w:r>
+                    </w:p>
+                </w:tc>
+                <w:tc>
+                    <w:p>
+                        <w:r>
+                            <w:t t=8>${boolTrue}</w:t>
+                        </w:r>
+                    </w:p>
+                </w:tc>
+            </w:tr>
+        </w:tbl>';
+        $templateProcessor = new TestableTemplateProcesor($mainPart);
+
+        self::assertEquals(
+            ['stringZero', 'intZero', 'stringTest', 'null', 'floatZero', 'intTen', 'boolFalse', 'boolTrue'],
+            $templateProcessor->getVariables()
+        );
+
+        $templateProcessor->setValue('stringZero', '0');
+        self::assertStringContainsString('<w:t t=1>0</w:t>', $templateProcessor->getMainPart());
+
+        $templateProcessor->setValue('intZero', 0);
+        self::assertStringContainsString('<w:t t=2>0</w:t>', $templateProcessor->getMainPart());
+
+        $templateProcessor->setValue('stringTest', 'test');
+        self::assertStringContainsString('<w:t t=3>test</w:t>', $templateProcessor->getMainPart());
+
+        $templateProcessor->setValue('null', null);
+        self::assertStringContainsString('<w:t t=4></w:t>', $templateProcessor->getMainPart());
+
+        $templateProcessor->setValue('floatZero', 0.00);
+        self::assertStringContainsString('<w:t t=5>0</w:t>', $templateProcessor->getMainPart());
+
+        $templateProcessor->setValue('intTen', 10);
+        self::assertStringContainsString('<w:t t=6>10</w:t>', $templateProcessor->getMainPart());
+
+        $templateProcessor->setValue('boolFalse', false);
+        self::assertStringContainsString('<w:t t=7></w:t>', $templateProcessor->getMainPart());
+
+        $templateProcessor->setValue('boolTrue', true);
+        self::assertStringContainsString('<w:t t=8>1</w:t>', $templateProcessor->getMainPart());
     }
 }

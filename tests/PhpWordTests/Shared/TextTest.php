@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -66,7 +67,7 @@ class TextTest extends \PHPUnit\Framework\TestCase
     {
         self::assertTrue(Text::isUTF8(''));
         self::assertTrue(Text::isUTF8('éééé'));
-        self::assertFalse(Text::isUTF8(utf8_decode('éééé')));
+        self::assertFalse(Text::isUTF8(utf8decode('éééé')));
     }
 
     /**

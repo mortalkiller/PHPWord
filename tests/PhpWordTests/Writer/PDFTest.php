@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -55,6 +56,6 @@ class PDFTest extends \PHPUnit\Framework\TestCase
         $this->expectException(\PhpOffice\PhpWord\Exception\Exception::class);
         $this->expectExceptionMessage('PDF rendering library or library path has not been defined.');
         $writer = new PDF(new PhpWord());
-        $writer->save();
+        $writer->save('unknown.file');
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -40,7 +41,6 @@ class Section extends Border
      */
     const DEFAULT_WIDTH = 11905.511811024; // In twips.
     const DEFAULT_HEIGHT = 16837.79527559; // In twips.
-    const DEFAULT_MARGIN = 1440;           // In twips.
     const DEFAULT_GUTTER = 0;              // In twips.
     const DEFAULT_HEADER_HEIGHT = 720;     // In twips.
     const DEFAULT_FOOTER_HEIGHT = 720;     // In twips.
@@ -59,7 +59,7 @@ class Section extends Border
     /**
      * Paper size.
      *
-     * @var \PhpOffice\PhpWord\Style\Paper
+     * @var Paper
      */
     private $paper;
 
@@ -76,34 +76,6 @@ class Section extends Border
      * @var float|int
      */
     private $pageSizeH = self::DEFAULT_HEIGHT;
-
-    /**
-     * Top margin spacing.
-     *
-     * @var float|int
-     */
-    private $marginTop = self::DEFAULT_MARGIN;
-
-    /**
-     * Left margin spacing.
-     *
-     * @var float|int
-     */
-    private $marginLeft = self::DEFAULT_MARGIN;
-
-    /**
-     * Right margin spacing.
-     *
-     * @var float|int
-     */
-    private $marginRight = self::DEFAULT_MARGIN;
-
-    /**
-     * Bottom margin spacing.
-     *
-     * @var float|int
-     */
-    private $marginBottom = self::DEFAULT_MARGIN;
 
     /**
      * Page gutter spacing.
@@ -166,7 +138,7 @@ class Section extends Border
     /**
      * Line numbering.
      *
-     * @var \PhpOffice\PhpWord\Style\LineNumbering
+     * @var LineNumbering
      *
      * @see  http://www.schemacentral.com/sc/ooxml/e-w_lnNumType-1.html
      */
@@ -307,7 +279,7 @@ class Section extends Border
     /**
      * @param null|float|int $value
      *
-     * @return \PhpOffice\PhpWord\Style\Section
+     * @return Section
      *
      * @since 0.12.0
      */
@@ -333,109 +305,13 @@ class Section extends Border
     /**
      * @param null|float|int $value
      *
-     * @return \PhpOffice\PhpWord\Style\Section
+     * @return Section
      *
      * @since 0.12.0
      */
     public function setPageSizeH($value = null)
     {
         $this->pageSizeH = $this->setNumericVal($value, self::DEFAULT_HEIGHT);
-
-        return $this;
-    }
-
-    /**
-     * Get Margin Top.
-     *
-     * @return float|int
-     */
-    public function getMarginTop()
-    {
-        return $this->marginTop;
-    }
-
-    /**
-     * Set Margin Top.
-     *
-     * @param float|int $value
-     *
-     * @return self
-     */
-    public function setMarginTop($value = null)
-    {
-        $this->marginTop = $this->setNumericVal($value, self::DEFAULT_MARGIN);
-
-        return $this;
-    }
-
-    /**
-     * Get Margin Left.
-     *
-     * @return float|int
-     */
-    public function getMarginLeft()
-    {
-        return $this->marginLeft;
-    }
-
-    /**
-     * Set Margin Left.
-     *
-     * @param float|int $value
-     *
-     * @return self
-     */
-    public function setMarginLeft($value = null)
-    {
-        $this->marginLeft = $this->setNumericVal($value, self::DEFAULT_MARGIN);
-
-        return $this;
-    }
-
-    /**
-     * Get Margin Right.
-     *
-     * @return float|int
-     */
-    public function getMarginRight()
-    {
-        return $this->marginRight;
-    }
-
-    /**
-     * Set Margin Right.
-     *
-     * @param float|int $value
-     *
-     * @return self
-     */
-    public function setMarginRight($value = null)
-    {
-        $this->marginRight = $this->setNumericVal($value, self::DEFAULT_MARGIN);
-
-        return $this;
-    }
-
-    /**
-     * Get Margin Bottom.
-     *
-     * @return float|int
-     */
-    public function getMarginBottom()
-    {
-        return $this->marginBottom;
-    }
-
-    /**
-     * Set Margin Bottom.
-     *
-     * @param float|int $value
-     *
-     * @return self
-     */
-    public function setMarginBottom($value = null)
-    {
-        $this->marginBottom = $this->setNumericVal($value, self::DEFAULT_MARGIN);
 
         return $this;
     }
@@ -611,7 +487,7 @@ class Section extends Border
     /**
      * Get line numbering.
      *
-     * @return \PhpOffice\PhpWord\Style\LineNumbering
+     * @return LineNumbering
      */
     public function getLineNumbering()
     {

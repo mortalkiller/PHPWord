@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -74,5 +75,22 @@ class DomPDFTest extends \PHPUnit\Framework\TestCase
 
         $writer->setTempDir(Settings::getTempDir());
         self::assertEquals(Settings::getTempDir(), $writer->getTempDir());
+    }
+
+    /**
+     * Test set/get abstract renderer options.
+     */
+    public function testSetGetAbstractRendererOptions(): void
+    {
+        define('DOMPDF_ENABLE_AUTOLOAD', false);
+
+        $rendererName = Settings::PDF_RENDERER_DOMPDF;
+        $rendererLibraryPath = realpath(PHPWORD_TESTS_BASE_DIR . '/../vendor/dompdf/dompdf');
+        Settings::setPdfRenderer($rendererName, $rendererLibraryPath);
+        Settings::setPdfRendererOptions([
+            'font' => 'Arial',
+        ]);
+        $writer = new PDF(new PhpWord());
+        self::assertEquals('Arial', $writer->getFont());
     }
 }

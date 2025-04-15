@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -42,7 +43,7 @@ class TestHelperDOCX
      *
      * @param string $writerName
      *
-     * @return \PhpOffice\PhpWordTests\XmlDocument
+     * @return XmlDocument
      */
     public static function getDocument(PhpWord $phpWord, $writerName = 'Word2007')
     {
@@ -80,6 +81,7 @@ class TestHelperDOCX
     {
         if (self::$file && file_exists(self::$file)) {
             unlink(self::$file);
+            self::$file = '';
         }
         if (is_dir(Settings::getTempDir() . '/PhpWord_Unit_Test/')) {
             self::deleteDir(Settings::getTempDir() . '/PhpWord_Unit_Test/');
@@ -103,7 +105,7 @@ class TestHelperDOCX
             }
         }
 
-        rmdir($dir);
+        @rmdir($dir);
     }
 
     /**

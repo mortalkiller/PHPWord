@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -18,7 +19,9 @@
 namespace PhpOffice\PhpWordTests\Writer\Word2007;
 
 use DateTime;
+use PhpOffice\PhpWord\ComplexType\RubyProperties;
 use PhpOffice\PhpWord\Element\Comment;
+use PhpOffice\PhpWord\Element\Ruby;
 use PhpOffice\PhpWord\Element\TextRun;
 use PhpOffice\PhpWord\Element\TrackChange;
 use PhpOffice\PhpWord\PhpWord;
@@ -306,6 +309,44 @@ class ElementTest extends \PHPUnit\Framework\TestCase
         self::assertEquals($stnam, $doc->getElementAttribute($sty . '/w:rStyle', 'w:val'));
     }
 
+    public function testFieldElementFilename(): void
+    {
+        $phpWord = new PhpWord();
+        $stnam = 'h1';
+        $phpWord->addFontStyle($stnam, ['name' => 'Courier New', 'size' => 8]);
+        $section = $phpWord->addSection();
+
+        $fld = $section->addField('FILENAME');
+        $fld->setFontStyle($stnam);
+        $doc = TestHelperDOCX::getDocument($phpWord);
+
+        $element = '/w:document/w:body/w:p/w:r[2]/w:instrText';
+        self::assertTrue($doc->elementExists($element));
+        self::assertEquals(' FILENAME ', $doc->getElement($element)->textContent);
+        $sty = '/w:document/w:body/w:p/w:r[2]/w:rPr';
+        self::assertTrue($doc->elementExists($sty));
+        self::assertEquals($stnam, $doc->getElementAttribute($sty . '/w:rStyle', 'w:val'));
+    }
+
+    public function testFieldElementFilenameOptionsPath(): void
+    {
+        $phpWord = new PhpWord();
+        $stnam = 'h1';
+        $phpWord->addFontStyle($stnam, ['name' => 'Courier New', 'size' => 8]);
+        $section = $phpWord->addSection();
+
+        $fld = $section->addField('FILENAME', [], ['Path']);
+        $fld->setFontStyle($stnam);
+        $doc = TestHelperDOCX::getDocument($phpWord);
+
+        $element = '/w:document/w:body/w:p/w:r[2]/w:instrText';
+        self::assertTrue($doc->elementExists($element));
+        self::assertEquals(' FILENAME \p ', $doc->getElement($element)->textContent);
+        $sty = '/w:document/w:body/w:p/w:r[2]/w:rPr';
+        self::assertTrue($doc->elementExists($sty));
+        self::assertEquals($stnam, $doc->getElementAttribute($sty . '/w:rStyle', 'w:val'));
+    }
+
     public function testFieldElementWithComplexText(): void
     {
         $phpWord = new PhpWord();
@@ -461,32 +502,6 @@ class ElementTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * Test Title and Headings.
-     */
-    public function testTitleAndHeading(): void
-    {
-        $phpWord = new PhpWord();
-        $phpWord->addTitleStyle(0, ['size' => 14, 'italic' => true]);
-        $phpWord->addTitleStyle(1, ['size' => 20, 'color' => '333333', 'bold' => true]);
-
-        $section = $phpWord->addSection();
-        $section->addTitle('This is a title', 0);
-        $section->addTitle('Heading 1', 1);
-
-        $doc = TestHelperDOCX::getDocument($phpWord);
-
-        self::assertTrue($doc->elementExists('/w:document/w:body/w:p[1]/w:r/w:t'));
-        self::assertEquals('This is a title', $doc->getElement('/w:document/w:body/w:p[1]/w:r/w:t')->textContent);
-        self::assertTrue($doc->elementExists('/w:document/w:body/w:p[1]/w:pPr/w:pStyle'));
-        self::assertEquals('Title', $doc->getElementAttribute('/w:document/w:body/w:p[1]/w:pPr/w:pStyle', 'w:val'));
-
-        self::assertTrue($doc->elementExists('/w:document/w:body/w:p[2]/w:r/w:t'));
-        self::assertEquals('Heading 1', $doc->getElement('/w:document/w:body/w:p[2]/w:r/w:t')->textContent);
-        self::assertTrue($doc->elementExists('/w:document/w:body/w:p[2]/w:pPr/w:pStyle'));
-        self::assertEquals('Heading1', $doc->getElementAttribute('/w:document/w:body/w:p[2]/w:pPr/w:pStyle', 'w:val'));
-    }
-
-    /**
      * Test correct writing of text with ampersant in it.
      */
     public function testTextWithAmpersant(): void
@@ -520,5 +535,133 @@ class ElementTest extends \PHPUnit\Framework\TestCase
         self::assertEquals('List item', $doc->getElement('/w:document/w:body/w:p/w:r[1]/w:t')->nodeValue);
         self::assertEquals(' in bold', $doc->getElement('/w:document/w:body/w:p/w:r[2]/w:t')->nodeValue);
         self::assertTrue($doc->elementExists('/w:document/w:body/w:p/w:r[2]/w:rPr/w:b'));
+    }
+
+    /**
+     * Test Ruby writing.
+     */
+    public function testRubyWriting(): void
+    {
+        $phpWord = new PhpWord();
+
+        $section = $phpWord->addSection();
+        $properties = new RubyProperties();
+        $properties->setAlignment(RubyProperties::ALIGNMENT_RIGHT_VERTICAL);
+        $properties->setFontFaceSize(10);
+        $properties->setFontPointsAboveBaseText(4);
+        $properties->setFontSizeForBaseText(18);
+        $properties->setLanguageId('ja-JP');
+
+        $baseTextRun = new TextRun(null);
+        $baseTextRun->addText('私');
+        $rubyTextRun = new TextRun(null);
+        $rubyTextRun->addText('わたし');
+        $section->addRuby($baseTextRun, $rubyTextRun, $properties);
+
+        $doc = TestHelperDOCX::getDocument($phpWord);
+        self::assertTrue($doc->elementExists('/w:document/w:body/w:p/w:r/w:ruby'));
+        // check props
+        self::assertTrue($doc->elementExists('/w:document/w:body/w:p/w:r/w:ruby/w:rubyPr'));
+        self::assertEquals(
+            RubyProperties::ALIGNMENT_RIGHT_VERTICAL,
+            $doc->getElementAttribute('/w:document/w:body/w:p/w:r/w:ruby/w:rubyPr/w:rubyAlign', 'w:val')
+        );
+        self::assertEquals(
+            10,
+            $doc->getElementAttribute('/w:document/w:body/w:p/w:r/w:ruby/w:rubyPr/w:hps', 'w:val')
+        );
+        self::assertEquals(
+            4,
+            $doc->getElementAttribute('/w:document/w:body/w:p/w:r/w:ruby/w:rubyPr/w:hpsRaise', 'w:val')
+        );
+        self::assertEquals(
+            18,
+            $doc->getElementAttribute('/w:document/w:body/w:p/w:r/w:ruby/w:rubyPr/w:hpsBaseText', 'w:val')
+        );
+        self::assertEquals(
+            'ja-JP',
+            $doc->getElementAttribute('/w:document/w:body/w:p/w:r/w:ruby/w:rubyPr/w:lid', 'w:val')
+        );
+        // check ruby text
+        self::assertTrue($doc->elementExists('/w:document/w:body/w:p/w:r/w:ruby/w:rt/w:r/w:t'));
+        self::assertEquals(
+            'わたし',
+            $doc->getElement('/w:document/w:body/w:p/w:r/w:ruby/w:rt/w:r/w:t')->nodeValue
+        );
+        // check base text
+        self::assertTrue($doc->elementExists('/w:document/w:body/w:p/w:r/w:ruby/w:rubyBase/w:r/w:t'));
+        self::assertEquals(
+            '私',
+            $doc->getElement('/w:document/w:body/w:p/w:r/w:ruby/w:rubyBase/w:r/w:t')->nodeValue
+        );
+    }
+
+    /**
+     * Test Ruby title writing.
+     */
+    public function testRubyTitleWriting(): void
+    {
+        $phpWord = new PhpWord();
+        $phpWord->addTitleStyle(1, ['name' => 'Arial', 'size' => 24, 'bold' => true, 'color' => '990000']);
+
+        $section = $phpWord->addSection();
+        $properties = new RubyProperties();
+        $properties->setAlignment(RubyProperties::ALIGNMENT_RIGHT_VERTICAL);
+        $properties->setFontFaceSize(10);
+        $properties->setFontPointsAboveBaseText(4);
+        $properties->setFontSizeForBaseText(18);
+        $properties->setLanguageId('ja-JP');
+
+        $baseTextRun = new TextRun(null);
+        $baseTextRun->addText('私');
+        $rubyTextRun = new TextRun(null);
+        $rubyTextRun->addText('わたし');
+
+        $textRun = new TextRun();
+        $textRun->addRuby($baseTextRun, $rubyTextRun, $properties);
+        $section->addTitle($textRun, 1);
+
+        $doc = TestHelperDOCX::getDocument($phpWord);
+        // make sure style made it in
+        self::assertTrue($doc->elementExists('/w:document/w:body/w:p/w:pPr/w:pStyle'));
+        self::assertEquals(
+            'Heading1',
+            $doc->getElement('/w:document/w:body/w:p/w:pPr/w:pStyle')->getAttribute('w:val')
+        );
+        // check ruby props
+        self::assertTrue($doc->elementExists('/w:document/w:body/w:p/w:r/w:ruby'));
+        self::assertTrue($doc->elementExists('/w:document/w:body/w:p/w:r/w:ruby/w:rubyPr'));
+        self::assertEquals(
+            RubyProperties::ALIGNMENT_RIGHT_VERTICAL,
+            $doc->getElement('/w:document/w:body/w:p/w:r/w:ruby/w:rubyPr/w:rubyAlign')->getAttribute('w:val')
+        );
+        self::assertEquals(
+            10,
+            $doc->getElement('/w:document/w:body/w:p/w:r/w:ruby/w:rubyPr/w:hps')->getAttribute('w:val')
+        );
+        self::assertEquals(
+            4,
+            $doc->getElement('/w:document/w:body/w:p/w:r/w:ruby/w:rubyPr/w:hpsRaise')->getAttribute('w:val')
+        );
+        self::assertEquals(
+            18,
+            $doc->getElement('/w:document/w:body/w:p/w:r/w:ruby/w:rubyPr/w:hpsBaseText')->getAttribute('w:val')
+        );
+        self::assertEquals(
+            'ja-JP',
+            $doc->getElement('/w:document/w:body/w:p/w:r/w:ruby/w:rubyPr/w:lid')->getAttribute('w:val')
+        );
+        // check ruby text
+        self::assertTrue($doc->elementExists('/w:document/w:body/w:p/w:r/w:ruby/w:rt/w:r/w:t'));
+        self::assertEquals(
+            'わたし',
+            $doc->getElement('/w:document/w:body/w:p/w:r/w:ruby/w:rt/w:r/w:t')->nodeValue
+        );
+        // check base text
+        self::assertTrue($doc->elementExists('/w:document/w:body/w:p/w:r/w:ruby/w:rubyBase/w:r/w:t'));
+        self::assertEquals(
+            '私',
+            $doc->getElement('/w:document/w:body/w:p/w:r/w:ruby/w:rubyBase/w:r/w:t')->nodeValue
+        );
     }
 }

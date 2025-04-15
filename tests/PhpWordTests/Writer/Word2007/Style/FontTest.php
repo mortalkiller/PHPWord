@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -17,6 +18,8 @@
 
 namespace PhpOffice\PhpWordTests\Writer\Word2007\Style;
 
+use PhpOffice\PhpWord\PhpWord;
+use PhpOffice\PhpWord\Shared\Html;
 use PhpOffice\PhpWordTests\TestHelperDOCX;
 
 /**
@@ -41,7 +44,7 @@ class FontTest extends \PHPUnit\Framework\TestCase
      */
     public function testFontRTL(): void
     {
-        $phpWord = new \PhpOffice\PhpWord\PhpWord();
+        $phpWord = new PhpWord();
         $section = $phpWord->addSection();
         $textrun = $section->addTextRun();
         $textrun->addText('سلام این یک پاراگراف راست به چپ است', ['rtl' => true, 'lang' => 'ar-DZ']);
@@ -54,7 +57,7 @@ class FontTest extends \PHPUnit\Framework\TestCase
 
     public function testFontRTLNamed(): void
     {
-        $phpWord = new \PhpOffice\PhpWord\PhpWord();
+        $phpWord = new PhpWord();
         $stnam = 'fstyle';
         $phpWord->addFontStyle($stnam, [
             'rtl' => true,
@@ -79,7 +82,7 @@ class FontTest extends \PHPUnit\Framework\TestCase
 
     public function testFontNotRTLNamed(): void
     {
-        $phpWord = new \PhpOffice\PhpWord\PhpWord();
+        $phpWord = new PhpWord();
         $stnam = 'fstyle';
         $phpWord->addFontStyle($stnam, [
             //'rtl'  => true,
@@ -104,7 +107,7 @@ class FontTest extends \PHPUnit\Framework\TestCase
 
     public function testNoProof(): void
     {
-        $phpWord = new \PhpOffice\PhpWord\PhpWord();
+        $phpWord = new PhpWord();
         $fontStyle = [
             'noProof' => true,
             'name' => 'Courier New',
@@ -131,7 +134,7 @@ class FontTest extends \PHPUnit\Framework\TestCase
      */
     public function testFontWithLang(): void
     {
-        $phpWord = new \PhpOffice\PhpWord\PhpWord();
+        $phpWord = new PhpWord();
         $section = $phpWord->addSection();
         $section->addText('Ce texte-ci est en français.', ['lang' => \PhpOffice\PhpWord\Style\Language::FR_BE]);
         $doc = TestHelperDOCX::getDocument($phpWord, 'Word2007');
@@ -146,7 +149,7 @@ class FontTest extends \PHPUnit\Framework\TestCase
      */
     public function testPosition(): void
     {
-        $phpWord = new \PhpOffice\PhpWord\PhpWord();
+        $phpWord = new PhpWord();
         $section = $phpWord->addSection();
         $section->addText('This text is lowered', ['position' => -20]);
         $doc = TestHelperDOCX::getDocument($phpWord, 'Word2007');
@@ -154,5 +157,45 @@ class FontTest extends \PHPUnit\Framework\TestCase
         $path = '/w:document/w:body/w:p/w:r/w:rPr/w:position';
         self::assertTrue($doc->elementExists($path));
         self::assertEquals(-20, $doc->getElementAttribute($path, 'w:val'));
+    }
+
+    public static function testRgb(): void
+    {
+        $phpWord = new PhpWord();
+        $section = $phpWord->addSection(['pageNumberingStart' => 1]);
+        $html = implode(
+            "\n",
+            [
+                '<table>',
+                '<tbody>',
+                '<tr>',
+                '<td style="color: #A7D9C1;">This one is in color.</td>',
+                '<td style="color: rgb(167, 217, 193);">This one too.</td>',
+                '</tr>',
+                '</tbody>',
+                '</table>',
+            ]
+        );
+
+        Html::addHtml($section, $html, false, false);
+        $doc = TestHelperDOCX::getDocument($phpWord, 'Word2007');
+
+        $element = '/w:document/w:body/w:tbl/w:tr/w:tc/w:p/w:r';
+        $txtelem = $element . '/w:t';
+        $styelem = $element . '/w:rPr';
+        self::assertTrue($doc->elementExists($txtelem));
+        self::assertSame('This one is in color.', $doc->getElement($txtelem)->textContent);
+        self::assertTrue($doc->elementExists($styelem));
+        self::assertTrue($doc->elementExists($styelem . '/w:color'));
+        self::assertSame('A7D9C1', $doc->getElementAttribute($styelem . '/w:color', 'w:val'));
+
+        $element = '/w:document/w:body/w:tbl/w:tr/w:tc[2]/w:p/w:r';
+        $txtelem = $element . '/w:t';
+        $styelem = $element . '/w:rPr';
+        self::assertTrue($doc->elementExists($txtelem));
+        self::assertSame('This one too.', $doc->getElement($txtelem)->textContent);
+        self::assertTrue($doc->elementExists($styelem));
+        self::assertTrue($doc->elementExists($styelem . '/w:color'));
+        self::assertSame('A7D9C1', $doc->getElementAttribute($styelem . '/w:color', 'w:val'));
     }
 }

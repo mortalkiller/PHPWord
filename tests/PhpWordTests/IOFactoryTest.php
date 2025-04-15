@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -54,7 +55,7 @@ class IOFactoryTest extends TestCase
         self::assertInstanceOf($expected, $actual);
     }
 
-    public function providerCreateWriter(): iterable
+    public static function providerCreateWriter(): iterable
     {
         return [
             ['ODText', ODText::class],
@@ -115,5 +116,18 @@ class IOFactoryTest extends TestCase
             'PhpOffice\\PhpWord\\PhpWord',
             IOFactory::load($file)
         );
+    }
+
+    /**
+     * Test for extractVariables method.
+     */
+    public function testExtractVariables(): void
+    {
+        $file = __DIR__ . '/_files/templates/extract-variable.docx';
+        $extractedVariables = IOFactory::extractVariables($file, 'Word2007');
+
+        $expectedVariables = ['date', 'A1', 'B1'];
+
+        self::assertEquals($expectedVariables, $extractedVariables, 'Extracted variables do not match expected variables.');
     }
 }

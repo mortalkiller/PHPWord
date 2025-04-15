@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of PHPWord - A pure PHP library for reading and writing
  * word processing documents.
@@ -23,11 +24,15 @@ use PHPUnit\Framework\TestCase;
  * Test class for PhpOffice\PhpWord\Settings.
  *
  * @coversDefaultClass \PhpOffice\PhpWord\Settings
+ *
  * @runTestsInSeparateProcesses
  */
 class SettingsTest extends TestCase
 {
     private $compatibility;
+
+    /** @var string */
+    private $defaultFontColor;
 
     private $defaultFontSize;
 
@@ -41,38 +46,52 @@ class SettingsTest extends TestCase
 
     private $pdfRendererName;
 
+    /**
+     * @var array
+     */
+    private $pdfRendererOptions;
+
     private $pdfRendererPath;
 
     private $tempDir;
 
     private $zipClass;
 
+    /** @var bool */
+    private $defaultRtl;
+
     protected function setUp(): void
     {
         $this->compatibility = Settings::hasCompatibility();
+        $this->defaultFontColor = Settings::getDefaultFontColor();
         $this->defaultFontSize = Settings::getDefaultFontSize();
         $this->defaultFontName = Settings::getDefaultFontName();
         $this->defaultPaper = Settings::getDefaultPaper();
         $this->measurementUnit = Settings::getMeasurementUnit();
         $this->outputEscapingEnabled = Settings::isOutputEscapingEnabled();
         $this->pdfRendererName = Settings::getPdfRendererName();
+        $this->pdfRendererOptions = Settings::getPdfRendererOptions();
         $this->pdfRendererPath = Settings::getPdfRendererPath();
         $this->tempDir = Settings::getTempDir();
         $this->zipClass = Settings::getZipClass();
+        $this->defaultRtl = Settings::isDefaultRtl();
     }
 
     protected function tearDown(): void
     {
         Settings::setCompatibility($this->compatibility);
+        Settings::setDefaultFontColor($this->defaultFontColor);
         Settings::setDefaultFontSize($this->defaultFontSize);
         Settings::setDefaultFontName($this->defaultFontName);
         Settings::setDefaultPaper($this->defaultPaper);
         Settings::setMeasurementUnit($this->measurementUnit);
         Settings::setOutputEscapingEnabled($this->outputEscapingEnabled);
         Settings::setPdfRendererName($this->pdfRendererName);
+        Settings::setPdfRendererOptions($this->pdfRendererOptions);
         Settings::setPdfRendererPath($this->pdfRendererPath);
         Settings::setTempDir($this->tempDir);
         Settings::setZipClass($this->zipClass);
+        Settings::setDefaultRtl($this->defaultRtl);
     }
 
     /**
@@ -93,6 +112,17 @@ class SettingsTest extends TestCase
         self::assertFalse(Settings::isOutputEscapingEnabled());
         Settings::setOutputEscapingEnabled(true);
         self::assertTrue(Settings::isOutputEscapingEnabled());
+    }
+
+    public function testSetGetDefaultRtl(): void
+    {
+        self::assertNull(Settings::isDefaultRtl());
+        Settings::setDefaultRtl(true);
+        self::assertTrue(Settings::isDefaultRtl());
+        Settings::setDefaultRtl(false);
+        self::assertFalse(Settings::isDefaultRtl());
+        Settings::setDefaultRtl(null);
+        self::assertNull(Settings::isDefaultRtl());
     }
 
     /**
@@ -125,6 +155,23 @@ class SettingsTest extends TestCase
     }
 
     /**
+     * Test set/get PDF renderer.
+     */
+    public function testSetGetPdfOptions(): void
+    {
+        $domPdfPath = realpath(PHPWORD_TESTS_BASE_DIR . '/../vendor/dompdf/dompdf');
+
+        self::assertEquals([], Settings::getPdfRendererOptions());
+
+        Settings::setPdfRendererOptions([
+            'font' => 'Arial',
+        ]);
+        self::assertEquals([
+            'font' => 'Arial',
+        ], Settings::getPdfRendererOptions());
+    }
+
+    /**
      * Test set/get measurement unit.
      */
     public function testSetGetMeasurementUnit(): void
@@ -149,6 +196,7 @@ class SettingsTest extends TestCase
     /**
      * @covers ::getTempDir
      * @covers ::setTempDir
+     *
      * @depends testPhpTempDirIsUsedByDefault
      */
     public function testTempDirCanBeSet(): void
@@ -175,6 +223,20 @@ class SettingsTest extends TestCase
     }
 
     /**
+     * Test set/get default font name.
+     */
+    public function testSetGetDefaultAsianFontName(): void
+    {
+        self::assertEquals(Settings::DEFAULT_FONT_NAME, Settings::getDefaultAsianFontName());
+        self::assertFalse(Settings::setDefaultAsianFontName(' '));
+        self::assertEquals(Settings::DEFAULT_FONT_NAME, Settings::getDefaultAsianFontName());
+        self::assertTrue(Settings::setDefaultAsianFontName('Times New Roman'));
+        self::assertEquals('Times New Roman', Settings::getDefaultAsianFontName());
+        self::assertFalse(Settings::setDefaultAsianFontName(' '));
+        self::assertEquals('Times New Roman', Settings::getDefaultAsianFontName());
+    }
+
+    /**
      * Test set/get default font size.
      */
     public function testSetGetDefaultFontSize(): void
@@ -192,6 +254,20 @@ class SettingsTest extends TestCase
         self::assertEquals(12.5, Settings::getDefaultFontSize());
         self::assertFalse(Settings::setDefaultFontSize(0));
         self::assertEquals(12.5, Settings::getDefaultFontSize());
+    }
+
+    /**
+     * Test set/get default font color.
+     */
+    public function testSetGetDefaultFontColor(): void
+    {
+        self::assertEquals(Settings::DEFAULT_FONT_COLOR, Settings::getDefaultFontColor());
+        self::assertFalse(Settings::setDefaultFontColor(' '));
+        self::assertEquals(Settings::DEFAULT_FONT_COLOR, Settings::getDefaultFontColor());
+        self::assertTrue(Settings::setDefaultFontColor('FF0000'));
+        self::assertEquals('FF0000', Settings::getDefaultFontColor());
+        self::assertFalse(Settings::setDefaultFontColor(' '));
+        self::assertEquals('FF0000', Settings::getDefaultFontColor());
     }
 
     /**
@@ -229,6 +305,7 @@ class SettingsTest extends TestCase
             'pdfRendererPath' => '',
             'defaultFontName' => 'Arial',
             'defaultFontSize' => 10,
+            'defaultFontColor' => '000000',
             'outputEscapingEnabled' => false,
             'defaultPaper' => 'A4',
         ];
