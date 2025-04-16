@@ -119,6 +119,15 @@ class Chart extends AbstractStyle
      * @var string
      */
     private $valueAxisTitle;
+    /**
+     * @var string
+     */
+    private bool $categoryAxisLine = true;
+
+    /**
+     * @var string
+     */
+    private bool $valueAxisLine = true;
 
     /**
      * The position for major tick marks
@@ -489,6 +498,27 @@ class Chart extends AbstractStyle
 
         return $this;
     }
+    /**
+     * Get the categoryAxisLine.
+     *
+     * @return string
+     */
+    public function getCategoryAxisLine()
+    {
+        return $this->categoryAxisLine;
+    }
+
+    /**
+     * Set if line that appears on the category side of the chart.
+     *
+     * @param string $axisTitle
+     */
+    public function setCategoryAxisLine($axisLine)
+    {
+        $this->categoryAxisLine = $axisLine;
+
+        return $this;
+    }
 
     /**
      * Get the valueAxisTitle.
@@ -508,6 +538,27 @@ class Chart extends AbstractStyle
     public function setValueAxisTitle($axisTitle)
     {
         $this->valueAxisTitle = $axisTitle;
+
+        return $this;
+    }
+    /**
+     * Get the valueAxisLine.
+     *
+     * @return string
+     */
+    public function getValueAxisLine()
+    {
+        return $this->valueAxisLine;
+    }
+
+    /**
+     * Set if line that appears on the value side of the chart.
+     *
+     * @param string $axisTitle
+     */
+    public function setValueAxisLine($axisTitle)
+    {
+        $this->valueAxisLine = $axisTitle;
 
         return $this;
     }

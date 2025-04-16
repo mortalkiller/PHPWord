@@ -55,6 +55,11 @@ class Chart extends AbstractPart
         'scatter' => ['type' => 'scatter', 'colors' => 0, 'axes' => true, 'scatter' => 'marker', 'no3d' => true],
     ];
 
+    private array $legendOptions = [
+        'showLegend' => true,
+        'deleteLegendEntry' => []
+    ];
+
     /**
      * Chart options.
      *
@@ -126,8 +131,8 @@ class Chart extends AbstractPart
         $this->options = $this->types[$type];
 
         $title = $style->getTitle();
-        $showLegend = $style->isShowLegend();
-        $legendPosition = $style->getLegendPosition();
+
+
 
         //Chart title
         if ($title) {
@@ -149,11 +154,6 @@ class Chart extends AbstractPart
             $xmlWriter->writeElementBlock('c:autoTitleDeleted', 'val', 1);
         }
 
-        //Chart legend
-        if ($showLegend) {
-            $xmlWriter->writeRaw('<c:legend><c:legendPos val="' . $legendPosition . '"/></c:legend>');
-        }
-
         $xmlWriter->startElement('c:plotArea');
         $xmlWriter->writeElement('c:layout');
 
@@ -169,8 +169,32 @@ class Chart extends AbstractPart
         }
 
         $xmlWriter->endElement(); // c:plotArea
+
+        //Chart legend
+        $this->legendOptions['showLegend'] = $style->isShowLegend();
+        if ($this->legendOptions['showLegend']) {
+            $this->legendOptions['legendPosition'] = $style->getLegendPosition();
+
+            $this->writeLegends($xmlWriter);
+        }
     }
 
+    private function writeLegends(XMLWriter $xmlWriter): void
+    {
+
+        $xmlWriter->startElement('c:legend');
+        $xmlWriter->writeElementBlock('c:legendPos', 'val', $this->legendOptions['legendPosition']);
+
+        if(count($this->legendOptions['deleteLegendEntry'])) {
+            foreach ($this->legendOptions['deleteLegendEntry'] as $index) {
+                $xmlWriter->startElement('c:legendEntry');
+                $xmlWriter->writeElementBlock('c:idx', 'val', $index);
+                $xmlWriter->writeElementBlock('c:delete', 'val', true);
+                $xmlWriter->endElement();
+            }
+        }
+        $xmlWriter->endElement(); // c:legend
+    }
     /**
      * Write series.
      *
@@ -188,7 +212,12 @@ class Chart extends AbstractPart
         foreach ($series as $type => $items) {
             // Chart
             $this->startChart($xmlWriter, $type);
+
             foreach ($items as $seriesItem) {
+
+                $style = $seriesItem['style'] ?? $style;
+                $colors = $style->getColors();
+
                 $categories = $seriesItem['categories'];
                 $values = $seriesItem['values'];
 
@@ -217,7 +246,14 @@ class Chart extends AbstractPart
                 // This section needs to be made configurable before a pull request is made
                 $xmlWriter->startElement('c:dLbls');
 
-                foreach ($style->getDataLabelOptions() as $option => $val) {
+                $DataLabelOptions = $style->getDataLabelOptions();
+
+                if(! $DataLabelOptions['showLegendKey']) {
+                    $this->legendOptions['deleteLegendEntry'][$index] = $index;
+                }
+
+
+                foreach ($DataLabelOptions as $option => $val) {
                     $xmlWriter->writeElementBlock("c:{$option}", 'val', (int) $val);
                 }
 
@@ -236,14 +272,35 @@ class Chart extends AbstractPart
 
                     // check that there are colors
                     if (is_array($colors) && count($colors) > 0) {
+//                        if($type === 'line') {
+//                            dd($colors[$colorIndex++ % count($colors)]);
+//                        }
                         // assign a color to each value
                         $xmlWriter->startElement('c:spPr');
                         $xmlWriter->startElement('a:solidFill');
                         $xmlWriter->writeElementBlock('a:srgbClr', 'val', $colors[$colorIndex++ % count($colors)]);
                         $xmlWriter->endElement(); // a:solidFill
+                        if($type === 'line') {
+                            // assign a color to each value
+                            $xmlWriter->startElement('a:ln');
+                            $xmlWriter->writeAttribute('w', '28440');
+                            $xmlWriter->startElement('a:solidFill');
+                            $xmlWriter->writeElementBlock('a:srgbClr', 'val', $colors[$colorIndex++ % count($colors)]);
+                            $xmlWriter->endElement(); // a:solidFill
+                            $xmlWriter->endElement(); // a:ln
+                        }
                         $xmlWriter->endElement(); // c:spPr
                     }
                 }
+
+                if($type === 'line') {
+                    // assign a color to each value
+                    $xmlWriter->startElement('c:marker');
+                    $xmlWriter->writeElementBlock('c:symbol', 'none');
+                    $xmlWriter->endElement(); // a:solidFill
+                }
+
+
 
                 $xmlWriter->endElement(); // c:ser
                 ++$index;
@@ -273,6 +330,7 @@ class Chart extends AbstractPart
         $xmlWriter->writeElementBlock('c:ptCount', 'val', count($values));
 
         $index = 0;
+
         foreach ($values as $value) {
             $xmlWriter->startElement('c:pt');
             $xmlWriter->writeAttribute('idx', $index);
@@ -319,10 +377,12 @@ class Chart extends AbstractPart
             if (null !== $categoryAxisTitle) {
                 $this->writeAxisTitle($xmlWriter, $categoryAxisTitle);
             }
+            $this->writeShape($xmlWriter, $style->getCategoryAxisLine());
         } elseif ($axisType == 'c:valAx') {
             if (null !== $valueAxisTitle) {
                 $this->writeAxisTitle($xmlWriter, $valueAxisTitle);
             }
+            $this->writeShape($xmlWriter, $style->getValueAxisLine());
         }
 
         $xmlWriter->writeElementBlock('c:crossAx', 'val', $axisCross);
@@ -351,7 +411,7 @@ class Chart extends AbstractPart
         $xmlWriter->writeElementBlock('c:orientation', 'val', 'minMax');
         $xmlWriter->endElement(); // c:scaling
 
-        $this->writeShape($xmlWriter, true);
+
 
         $xmlWriter->endElement(); // $axisType
     }
@@ -404,6 +464,7 @@ class Chart extends AbstractPart
 
     private function startChart(XMLWriter $xmlWriter, $type)
     {
+
         $options = $this->types[$type];
         $chartType = $options['type'];
         $chartType .= $this->element->getStyle()->is3d() && !isset($this->options['no3d']) ? '3D' : '';

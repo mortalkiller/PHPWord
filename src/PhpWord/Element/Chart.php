@@ -98,15 +98,20 @@ class Chart extends AbstractElement
      * @param array $values
      * @param null|mixed $name
      */
-    public function addSeries($categories, $values, $name = null, $type = null): void
+    public function addSeries($categories, $values, $name = null, $type = null, $style = null): void
     {
         if ($type === null) {
             $type = $this->type;
         }
+        if($style !== null) {
+            $style= $this->setNewStyle(new ChartStyle(), $style, true);
+        }
+
         $this->series[$type][] = [
             'categories' => $categories,
             'values' => $values,
             'name' => $name,
+            'style' => $style,
         ];
     }
 
