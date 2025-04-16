@@ -54,28 +54,6 @@ class Chart extends AbstractStyle
     private $colors = [];
 
     /**
-     * Chart title.
-     *
-     * @var string
-     */
-    private $title;
-
-    /**
-     * Chart legend visibility.
-     *
-     * @var bool
-     */
-    private $showLegend = false;
-
-    /**
-     * Chart legend Position.
-     * Possible values are 'r', 't', 'b', 'l', 'tr'.
-     *
-     * @var string
-     */
-    private $legendPosition = 'r';
-
-    /**
      * A list of display options for data labels.
      *
      * @var array
@@ -89,6 +67,34 @@ class Chart extends AbstractStyle
         'showLeaderLines' => false,
         'showBubbleSize' => false,
     ];
+
+    /**
+     * Chart title.
+     *
+     * @var string
+     */
+    private $title;
+
+    /**
+     * Chart legend visibility.
+     *
+     * @var bool
+     */
+    private $showLegend = false;
+    /**
+     * Line simbol
+     *
+     * @var bool
+     */
+    private $lineSymbol = 'none';
+
+    /**
+     * Chart legend Position.
+     * Possible values are 'r', 't', 'b', 'l', 'tr'.
+     *
+     * @var string
+     */
+    private $legendPosition = 'r';
 
     /**
      * A string that tells the writer where to write chart labels or to skip
@@ -188,6 +194,39 @@ class Chart extends AbstractStyle
     public function setWidth($value = null)
     {
         $this->width = $this->setIntVal($value, $this->width);
+
+        return $this;
+    }
+    /**
+     * Get width.
+     *
+     * @return int
+     */
+    public function hasLineSymbol()
+    {
+        return $this->lineSymbol && $this->lineSymbol !== 'none';
+    }
+    /**
+     * Get width.
+     *
+     * @return int
+     */
+    public function getLineSymbol()
+    {
+        return $this->lineSymbol;
+    }
+
+    /**
+     * Set width.
+     *
+     * @param int $value
+     *
+     * @return self
+     */
+    public function setLineSymbol($value = null)
+    {
+        $enum = ['circle', 'dash', 'diamond', 'dot', 'none', 'plus', 'square', 'star', 'triangle', 'x', 'auto'];
+        $this->lineSymbol = $this->setEnumVal($value, $enum, 'none');
 
         return $this;
     }

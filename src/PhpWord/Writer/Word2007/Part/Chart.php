@@ -57,7 +57,8 @@ class Chart extends AbstractPart
 
     private array $legendOptions = [
         'showLegend' => true,
-        'deleteLegendEntry' => []
+        'deleteLegendEntry' => [],
+        'overlay' => '0'
     ];
 
     /**
@@ -90,8 +91,11 @@ class Chart extends AbstractPart
         $xmlWriter->writeAttribute('xmlns:a', 'http://schemas.openxmlformats.org/drawingml/2006/main');
         $xmlWriter->writeAttribute('xmlns:r', 'http://schemas.openxmlformats.org/officeDocument/2006/relationships');
 
+        $xmlWriter->writeElementBlock('c:lang', 'val', 'en-CA');
+        $xmlWriter->writeElementBlock('roundedCorners', 'val', '0');
+
         $this->writeChart($xmlWriter);
-        $this->writeShape($xmlWriter);
+        $this->writeShape($xmlWriter, false);
 
         $xmlWriter->endElement(); // c:chartSpace
 
@@ -108,6 +112,9 @@ class Chart extends AbstractPart
         $xmlWriter->startElement('c:chart');
 
         $this->writePlotArea($xmlWriter);
+
+        $xmlWriter->writeElementBlock('c:plotVisOnly', 'val', '1');
+        $xmlWriter->writeElementBlock('c:dispBlanksAs', 'val', 'zero');
 
         $xmlWriter->endElement(); // c:chart
     }
@@ -155,7 +162,7 @@ class Chart extends AbstractPart
         }
 
         $xmlWriter->startElement('c:plotArea');
-        $xmlWriter->writeElement('c:layout');
+//        $xmlWriter->writeElement('c:layout');
 
         // Chart
 
@@ -167,7 +174,7 @@ class Chart extends AbstractPart
             $this->writeAxis($xmlWriter, 'cat');
             $this->writeAxis($xmlWriter, 'val');
         }
-
+        $this->writeShape($xmlWriter);
         $xmlWriter->endElement(); // c:plotArea
 
         //Chart legend
@@ -185,6 +192,7 @@ class Chart extends AbstractPart
         $xmlWriter->startElement('c:legend');
         $xmlWriter->writeElementBlock('c:legendPos', 'val', $this->legendOptions['legendPosition']);
 
+
         if(count($this->legendOptions['deleteLegendEntry'])) {
             foreach ($this->legendOptions['deleteLegendEntry'] as $index) {
                 $xmlWriter->startElement('c:legendEntry');
@@ -193,6 +201,8 @@ class Chart extends AbstractPart
                 $xmlWriter->endElement();
             }
         }
+        $xmlWriter->writeElementBlock('c:overlay', 'val', $this->legendOptions['overlay']);
+
         $xmlWriter->endElement(); // c:legend
     }
     /**
@@ -241,7 +251,6 @@ class Chart extends AbstractPart
                     $xmlWriter->endElement(); // c:strRef
                     $xmlWriter->endElement(); // c:tx
                 }
-
                 // The c:dLbls was added to make word charts look more like the reports in SurveyGizmo
                 // This section needs to be made configurable before a pull request is made
                 $xmlWriter->startElement('c:dLbls');
@@ -253,6 +262,27 @@ class Chart extends AbstractPart
                 }
 
 
+                $xmlWriter->writeRaw('<c:txPr>
+                            <a:bodyPr wrap="square"/>
+                            <a:lstStyle/>
+                            <a:p>
+                                <a:pPr>
+                                    <a:defRPr b="0" sz="1000" spc="-1" strike="noStrike">
+                                        <a:solidFill>
+                                            <a:srgbClr val="000000"/>
+                                        </a:solidFill>
+                                        <a:latin typeface="Calibri"/>
+                                    </a:defRPr>
+                                </a:pPr>
+                            </a:p>
+                        </c:txPr>');
+
+                $xmlWriter->writeRaw('<c:extLst>
+                            <c:ext uri="{CE6537A1-D6FC-4f65-9D91-7224C49458BB}"
+                                   xmlns:c15="http://schemas.microsoft.com/office/drawing/2012/chart">
+                                <c15:showLeaderLines val="1"/>
+                            </c:ext>
+                        </c:extLst>');
                 foreach ($DataLabelOptions as $option => $val) {
                     $xmlWriter->writeElementBlock("c:{$option}", 'val', (int) $val);
                 }
@@ -296,7 +326,7 @@ class Chart extends AbstractPart
                 if($type === 'line') {
                     // assign a color to each value
                     $xmlWriter->startElement('c:marker');
-                    $xmlWriter->writeElementBlock('c:symbol', 'none');
+                    $xmlWriter->writeElementBlock('c:symbol', 'val', $style->getLineSymbol());
                     $xmlWriter->endElement(); // a:solidFill
                 }
 
@@ -404,7 +434,9 @@ class Chart extends AbstractPart
             $xmlWriter->writeElementBlock('c:crosses', 'val', 'autoZero');
         }
         if (isset($this->options['radar']) || ($type == 'cat' && $style->showGridX()) || ($type == 'val' && $style->showGridY())) {
-            $xmlWriter->writeElement('c:majorGridlines');
+            $xmlWriter->startElement('c:majorGridlines');
+            $this->writeShape($xmlWriter, true);
+            $xmlWriter->endElement(); // c:majorGridlines
         }
 
         $xmlWriter->startElement('c:scaling');
@@ -423,12 +455,29 @@ class Chart extends AbstractPart
      *
      * @param bool $line
      */
-    private function writeShape(XMLWriter $xmlWriter, $line = false): void
+    private function writeShape(XMLWriter $xmlWriter, $line = false, $color=null, $backgroudcolor = null): void
     {
         $xmlWriter->startElement('c:spPr');
+
+        if($line === true && $backgroudcolor) {
+            $xmlWriter->startElement('a:solidFill');
+            $xmlWriter->writeElementBlock('a:srgbClr', 'val', $backgroudcolor);
+            $xmlWriter->endElement(); // a:solidFill
+        } else {
+            $xmlWriter->writeElement('a:noFill');
+        }
+
+
         $xmlWriter->startElement('a:ln');
         if ($line === true) {
-            $xmlWriter->writeElement('a:solidFill');
+            if(! $color) {
+                $xmlWriter->writeElement('a:solidFill');
+            } else {
+                $xmlWriter->startElement('a:solidFill');
+                $xmlWriter->writeElementBlock('a:srgbClr', 'val', $color);
+                $xmlWriter->endElement(); // a:solidFill
+            }
+
         } else {
             $xmlWriter->writeElement('a:noFill');
         }
