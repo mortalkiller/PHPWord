@@ -510,7 +510,7 @@ class Chart extends AbstractStyle
      */
     public function setValueLabelPosition($labelPosition)
     {
-        $enum = ['nextTo', 'low', 'high'];
+        $enum = ['nextTo', 'low', 'high', 'none'];
         $this->valueLabelPosition = $this->setEnumVal($labelPosition, $enum, $this->valueLabelPosition);
 
         return $this;
