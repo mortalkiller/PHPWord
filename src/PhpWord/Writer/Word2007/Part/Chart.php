@@ -328,6 +328,7 @@ class Chart extends AbstractPart
                     $xmlWriter->startElement('c:marker');
                     $xmlWriter->writeElementBlock('c:symbol', 'val', $style->getLineSymbol());
                     $xmlWriter->endElement(); // a:solidFill
+                    $xmlWriter->writeElementBlock('c:smooth','val', 0); // a:solidFill
                 }
 
 
