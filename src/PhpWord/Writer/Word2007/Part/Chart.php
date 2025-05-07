@@ -361,6 +361,12 @@ class Chart extends AbstractPart
 
         $xmlWriter->startElement($itemType);
         $xmlWriter->startElement($itemLit);
+        if ($type == 'val') {
+            $style = $this->element->getStyle();
+            $DataLabelFormat = $style->getDataLabelFormat();
+            $xmlWriter->writeElement('c:formatCode', $DataLabelFormat['formatCode']);
+        }
+
         $xmlWriter->writeElementBlock('c:ptCount', 'val', count($values));
 
         $index = 0;
@@ -446,9 +452,10 @@ class Chart extends AbstractPart
         $xmlWriter->startElement('c:scaling');
         $xmlWriter->writeElementBlock('c:orientation', 'val', 'minMax');
         $xmlWriter->endElement(); // c:scaling
-        $CategoryLabelFormat = $style->getCategoryLabelFormat();
+
 
         if ($axisType == 'c:catAx') {
+            $CategoryLabelFormat = $style->getCategoryLabelFormat();
             if(isset($CategoryLabelFormat['formatCode'])) {
                 $xmlWriter->writeRaw('<c:numFmt formatCode="'.$CategoryLabelFormat['formatCode'].'" sourceLinked="0"/>');
             }
@@ -463,6 +470,26 @@ class Chart extends AbstractPart
                                         </a:solidFill>
                                         <a:uFillTx/>
                                         <a:latin typeface="'.$CategoryLabelFormat['typeface'].'"/>
+                                    </a:defRPr>
+                                </a:pPr>
+                            </a:p>
+                        </c:txPr>');
+        } else if ($axisType == 'c:valAx') {
+            $DataLabelFormat = $style->getDataLabelFormat();
+            if(isset($DataLabelFormat['formatCode'])) {
+                $xmlWriter->writeRaw('<c:numFmt formatCode="'.$DataLabelFormat['formatCode'].'" sourceLinked="0"/>');
+            }
+            $xmlWriter->writeRaw('<c:txPr>
+                            <a:bodyPr wrap="square"/>
+                            <a:lstStyle/>
+                            <a:p>
+                                <a:pPr>
+                                    <a:defRPr b="0" sz="'.$DataLabelFormat['fontSize'].'" strike="noStrike" u="none">
+                                        <a:solidFill>
+                                            <a:srgbClr val="000000"/>
+                                        </a:solidFill>
+                                        <a:uFillTx/>
+                                        <a:latin typeface="'.$DataLabelFormat['typeface'].'"/>
                                     </a:defRPr>
                                 </a:pPr>
                             </a:p>
