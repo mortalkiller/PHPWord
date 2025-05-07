@@ -68,6 +68,18 @@ class Chart extends AbstractStyle
         'showBubbleSize' => false,
     ];
 
+    private $dataLabelFormat = [
+        'formatCode' => 'General', // formart code 0.00%
+        'fontSize' => '1000', // fontsize name
+        'typeface' => 'Calibri', // fontface name
+    ];
+
+    private $categoryLabelFormat = [
+        'formatCode' => 'General', // formart code 0.00%
+        'fontSize' => '1000', // fontsize name
+        'typeface' => 'Aptos', // fontface name
+    ];
+
     /**
      * Chart title.
      *
@@ -640,5 +652,44 @@ class Chart extends AbstractStyle
         $this->gridX = $this->setBoolVal($value, $this->gridX);
 
         return $this;
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getDataLabelFormat(): array
+    {
+        return $this->dataLabelFormat;
+    }
+
+    /**
+     * @param string[] $dataLabelFormat
+     */
+    public function setDataLabelFormat(array $values = []): void
+    {
+        foreach (array_keys($this->dataLabelFormat) as $option) {
+            if (isset($values[$option])) {
+                $this->dataLabelFormat[$option] = $values[$option];
+            }
+        }
+    }
+    /**
+     * @return string[]
+     */
+    public function getCategoryLabelFormat(): array
+    {
+        return $this->categoryLabelFormat;
+    }
+
+    /**
+     * @param string[] $categoryLabelFormat
+     */
+    public function setCategoryLabelFormat(array $values = []): void
+    {
+        foreach (array_keys($this->categoryLabelFormat) as $option) {
+            if (isset($values[$option])) {
+                $this->categoryLabelFormat[$option] = $values[$option];
+            }
+        }
     }
 }

@@ -261,13 +261,16 @@ class Chart extends AbstractPart
                     $this->legendOptions['deleteLegendEntry'][$index] = $index;
                 }
 
-
+                $DataLabelFormat = $style->getDataLabelFormat();
+                if(isset($DataLabelFormat['formatCode'])) {
+                    $xmlWriter->writeRaw('<c:numFmt formatCode="'.$DataLabelFormat['formatCode'].'" sourceLinked="0"/>');
+                }
                 $xmlWriter->writeRaw('<c:txPr>
                             <a:bodyPr wrap="square"/>
                             <a:lstStyle/>
                             <a:p>
                                 <a:pPr>
-                                    <a:defRPr b="0" sz="1000" spc="-1" strike="noStrike">
+                                    <a:defRPr b="0" sz="'.$DataLabelFormat['fontSize'].'" strike="noStrike" u="none">
                                         <a:solidFill>
                                             <a:srgbClr val="000000"/>
                                         </a:solidFill>
@@ -443,8 +446,28 @@ class Chart extends AbstractPart
         $xmlWriter->startElement('c:scaling');
         $xmlWriter->writeElementBlock('c:orientation', 'val', 'minMax');
         $xmlWriter->endElement(); // c:scaling
+        $CategoryLabelFormat = $style->getCategoryLabelFormat();
 
-
+        if ($axisType == 'c:catAx') {
+            if(isset($CategoryLabelFormat['formatCode'])) {
+                $xmlWriter->writeRaw('<c:numFmt formatCode="'.$CategoryLabelFormat['formatCode'].'" sourceLinked="0"/>');
+            }
+            $xmlWriter->writeRaw('<c:txPr>
+                            <a:bodyPr wrap="square"/>
+                            <a:lstStyle/>
+                            <a:p>
+                                <a:pPr>
+                                    <a:defRPr b="0" sz="'.$CategoryLabelFormat['fontSize'].'" strike="noStrike" u="none">
+                                        <a:solidFill>
+                                            <a:srgbClr val="000000"/>
+                                        </a:solidFill>
+                                        <a:uFillTx/>
+                                        <a:latin typeface="'.$CategoryLabelFormat['typeface'].'"/>
+                                    </a:defRPr>
+                                </a:pPr>
+                            </a:p>
+                        </c:txPr>');
+        }
 
         $xmlWriter->endElement(); // $axisType
     }
