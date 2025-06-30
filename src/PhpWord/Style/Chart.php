@@ -80,6 +80,12 @@ class Chart extends AbstractStyle
         'typeface' => 'Aptos', // fontface name
     ];
 
+
+    private $dataLegendFormat = [
+        'fontSize' => '1000', // fontsize name
+        'typeface' => 'Aptos', // fontface name
+    ];
+
     /**
      * Chart title.
      *
@@ -689,6 +695,25 @@ class Chart extends AbstractStyle
         foreach (array_keys($this->categoryLabelFormat) as $option) {
             if (isset($values[$option])) {
                 $this->categoryLabelFormat[$option] = $values[$option];
+            }
+        }
+    }
+    /**
+     * @return string[]
+     */
+    public function getDataLegendFormat(): array
+    {
+        return $this->dataLegendFormat;
+    }
+
+    /**
+     * @param string[] $categoryLabelFormat
+     */
+    public function setDataLegendFormat(array $values = []): void
+    {
+        foreach (array_keys($this->dataLegendFormat) as $option) {
+            if (isset($values[$option])) {
+                $this->dataLegendFormat[$option] = $values[$option];
             }
         }
     }

@@ -188,6 +188,8 @@ class Chart extends AbstractPart
 
     private function writeLegends(XMLWriter $xmlWriter): void
     {
+        $style = $this->element->getStyle();
+        $dataLegendFormat = $style->getDataLegendFormat();
 
         $xmlWriter->startElement('c:legend');
         $xmlWriter->writeElementBlock('c:legendPos', 'val', $this->legendOptions['legendPosition']);
@@ -202,6 +204,31 @@ class Chart extends AbstractPart
             }
         }
         $xmlWriter->writeElementBlock('c:overlay', 'val', $this->legendOptions['overlay']);
+
+        $xmlWriter->writeRaw('
+            <c:spPr>
+                <a:noFill/>
+                <a:ln w="0">
+                    <a:noFill/>
+                </a:ln>
+            </c:spPr>
+            <c:txPr>
+                <a:bodyPr/>
+                <a:lstStyle/>
+                <a:p>
+                    <a:pPr>
+                        <a:defRPr b="0" sz="'.$dataLegendFormat['fontSize'].'" strike="noStrike" u="none">
+                            <a:solidFill>
+                                <a:srgbClr val="000000"/>
+                            </a:solidFill>
+                            <a:uFillTx/>
+                            <a:latin typeface="'.$dataLegendFormat['typeface'].'"/>
+                        </a:defRPr>
+                    </a:pPr>
+                </a:p>
+            </c:txPr>
+        ');
+
 
         $xmlWriter->endElement(); // c:legend
     }
