@@ -335,21 +335,38 @@ class Chart extends AbstractPart
 //                        if($type === 'line') {
 //                            dd($colors[$colorIndex++ % count($colors)]);
 //                        }
-                        // assign a color to each value
-                        $xmlWriter->startElement('c:spPr');
-                        $xmlWriter->startElement('a:solidFill');
-                        $xmlWriter->writeElementBlock('a:srgbClr', 'val', $colors[$colorIndex++ % count($colors)]);
-                        $xmlWriter->endElement(); // a:solidFill
-                        if($type === 'line') {
+                        if($type === 'pie') {
+                            $colorIndex = 0;
+                            foreach ($colors as $color)
+                            {
+                                $xmlWriter->startElement('c:dPt');
+                                $xmlWriter->writeElementBlock('c:idx', 'val', $colorIndex);
+                                $xmlWriter->startElement('c:spPr');
+                                $xmlWriter->startElement('a:solidFill');
+                                $xmlWriter->writeElementBlock('a:srgbClr', 'val', $color);
+                                $xmlWriter->endElement(); // a:solidFill
+                                $xmlWriter->endElement(); // c:spPr
+                                $xmlWriter->endElement(); // c:dPt
+
+                                $colorIndex++;
+                            }
+                        } else {
                             // assign a color to each value
-                            $xmlWriter->startElement('a:ln');
-                            $xmlWriter->writeAttribute('w', '28440');
+                            $xmlWriter->startElement('c:spPr');
                             $xmlWriter->startElement('a:solidFill');
                             $xmlWriter->writeElementBlock('a:srgbClr', 'val', $colors[$colorIndex++ % count($colors)]);
                             $xmlWriter->endElement(); // a:solidFill
-                            $xmlWriter->endElement(); // a:ln
+                            if($type === 'line') {
+                                // assign a color to each value
+                                $xmlWriter->startElement('a:ln');
+                                $xmlWriter->writeAttribute('w', '28440');
+                                $xmlWriter->startElement('a:solidFill');
+                                $xmlWriter->writeElementBlock('a:srgbClr', 'val', $colors[$colorIndex++ % count($colors)]);
+                                $xmlWriter->endElement(); // a:solidFill
+                                $xmlWriter->endElement(); // a:ln
+                            }
+                            $xmlWriter->endElement(); // c:spPr
                         }
-                        $xmlWriter->endElement(); // c:spPr
                     }
                 }
 
